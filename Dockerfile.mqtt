@@ -1,0 +1,15 @@
+# Utiliza una imagen base adecuada para el broker MQTT (por ejemplo, eclipse-mosquitto)
+FROM eclipse-mosquitto:latest
+FROM python:3.11.3
+
+WORKDIR /mqtt
+
+# Copia el archivo mqtt.py
+COPY credentials.secret /mqtt
+COPY mqtt.py /mqtt
+
+# Instala las dependencias
+RUN pip install paho-mqtt requests configparser
+
+# Comando para ejecutar el broker MQTT (ajústalo según el broker que estés utilizando)
+CMD ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
