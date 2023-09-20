@@ -24,3 +24,12 @@ class Stock(Base):
 #     shortName = Column(String, index=True)
 #     price = Column(Float)
 #     currency = Column(String)
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(int, index=True)
+    datetime = Column(String, index=True)
+    symbol = Column(String, index=True)
+    quantity = Column(float)
+    status = Column(String) #Puede ser aproved, rejected o waiting

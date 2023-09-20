@@ -6,10 +6,31 @@ from sqlalchemy.types import DateTime
 from database import crud
 from database.models import Stock
 from database import database
+import configparser
 import json
 from api.functions import create_list_from_stock_data
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
+import paho.mqtt.client as mqtt
+
+config = configparser.ConfigParser()
+config.read("credentials.secret")
+
+HOST = config.get("Credentials", "HOST")
+PORT = 9000
+USER = config.get("Credentials", "USER")
+PASSWORD = config.get("Credentials", "PASSWORD")
+TOPIC = "stocks/requests"
+GROUP_ID = "13"
+client = mqtt.Client()
+client.username_pw_set(USER, PASSWORD)
+def on_connect(client, userdata, flags, rc):
+    print("Conectado al broker con código:", rc)
+def on_connect(client, userdata, flags, rc):
+    print("Solicitud de compra enviada: ", rc)
+    
+
+
 
 
 router = APIRouter()
@@ -86,3 +107,25 @@ def get_stocks_by_symbol_paginated(
     html_content += "</body></html>"
     
     return HTMLResponse(content=html_content)
+@router.post("stocks/validate")
+async def purchase_validation(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    purchase = data["request_id"]
+    validation = data["valid"]
+    crud.validate_transaction(db,purchase,validation)
+
+@router.post("stocks/buy")
+async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    transaction = crud.create_transaction(db,user_id=data["user_id"],datetime=data["datetime"],symbol=data["symbol"],quantity=data["quantity"])
+    request_id = transaction.id
+    client.connect(HOST, PORT)
+    client.publish(TOPIC,{
+        "request_id":request_id,
+        "group_id":GROUP_ID,
+        "symbol":data["symbol"],
+        "datetime":data["datetime"],
+        "deposit_token":"",
+        "quantity":data["quantity"],
+        "seller":0
+    })
