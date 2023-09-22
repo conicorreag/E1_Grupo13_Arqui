@@ -28,10 +28,15 @@ class Stock(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(int, index=True)
+    user_id = Column(Integer, index=True)
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)
-    quantity = Column(float)
-    status = Column(String) #Puede ser aproved, rejected o waiting
+    quantity = Column(Integer)
+    status = Column(String) #Puede ser approved, rejected o waiting
     location = Column(String)
 
+class Wallet(Base):
+    __tablename__ = "wallets"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    balance = Column(Float)

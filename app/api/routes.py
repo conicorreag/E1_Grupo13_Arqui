@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, and_
 from sqlalchemy.sql import cast
 from sqlalchemy.types import DateTime
 from database import crud
-from database.models import Stock
+from database.models import Stock, Transaction
 from database import database
 import configparser
 import json
@@ -107,28 +107,39 @@ def get_stocks_by_symbol_paginated(
     html_content += "</body></html>"
     
     return HTMLResponse(content=html_content)
-@router.post("stocks/validate")
+@router.post("/transactions/validate")
 async def purchase_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     purchase = data["request_id"]
     validation = data["valid"]
-    crud.validate_transaction(db,purchase,validation)
+    return crud.validate_transaction(db,purchase,validation)
 
-@router.post("stocks/buy")
+@router.post("/transactions")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     ip = request.client.host
     location = get_location(ip)
-    transaction = crud.create_transaction(db,user_id=data["user_id"],datetime=data["datetime"],symbol=data["symbol"],quantity=data["quantity"])
+    transaction = crud.create_transaction(db,user_id=data["user_id"],datetime=data["datetime"],symbol=data["symbol"],quantity=data["quantity"], location=location)
     request_id = transaction.id
-    client.connect(HOST, PORT)
-    client.publish(TOPIC,{
+    broker_message = {
         "request_id":request_id,
         "group_id":GROUP_ID,
         "symbol":data["symbol"],
         "datetime":data["datetime"],
         "deposit_token":"",
         "quantity":data["quantity"],
-        "seller":0,
-        "location":location
-    })
+        "seller":0
+    }
+    client.connect(HOST, PORT)
+    client.publish(TOPIC,json.dumps(broker_message))
+    return transaction
+
+@router.get("/transactions")
+async def get_user_transactions(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    return crud.get_user_transactions(db, data["user_id"])
+
+@router.put("/wallet")
+async def update_user_wallet(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    return crud.update_user_wallet(db, data["user_id"], data["amount"])
