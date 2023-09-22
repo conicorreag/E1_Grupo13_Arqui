@@ -14,36 +14,51 @@ router = APIRouter()
 
 
 @router.post("/create_stocks/")
-async def create_stock(request: Request,
-                       db: Session = Depends(database.get_db)):
+async def create_stock(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     print(data)
     list_data = create_list_from_stock_data(data)
     for stock in list_data:
-        crud.create_stock(db, stock["stocks_id"], stock["datetime"],
-                          stock["symbol"], stock["shortName"], stock["price"],
-                          stock["currency"], stock["source"])
+        crud.create_stock(
+            db,
+            stock["stocks_id"],
+            stock["datetime"],
+            stock["symbol"],
+            stock["shortName"],
+            stock["price"],
+            stock["currency"],
+            stock["source"],
+        )
     print("Stocks created")
 
 
 @router.get("/stocks")
 def show_stocks(db: Session = Depends(database.get_db)):
     subquery = (
-        db.query(Stock.symbol, func.max(cast(Stock.datetime,
-                                             DateTime)).label("max_datetime"))
+        db.query(Stock.symbol, func.max(cast(Stock.datetime, DateTime)).label("max_datetime"))
         .group_by(Stock.symbol)
         .subquery()
     )
 
     stocks_data = (
         db.query(Stock.shortName, Stock.symbol, Stock.price)
-        .join(subquery, and_(Stock.symbol == subquery.c.symbol, cast(
-              Stock.datetime, DateTime) == subquery.c.max_datetime))
+        .join(
+            subquery,
+            and_(
+                Stock.symbol == subquery.c.symbol,
+                cast(Stock.datetime, DateTime) == subquery.c.max_datetime,
+            ),
+        )
         .group_by(Stock.shortName, Stock.symbol, Stock.price)
         .all()
     )
 
-    stocks_formatted = "<br><br>".join([f"<strong>{name}</strong> (<strong>{symbol}</strong>) - Most recent price: {price}" for name, symbol, price in stocks_data])
+    stocks_formatted = "<br><br>".join(
+        [
+            f"<strong>{name}</strong> (<strong>{symbol}</strong>) - Most recent price: {price}"
+            for name, symbol, price in stocks_data
+        ]
+    )
     html_content = f"<html><body>{stocks_formatted}</body></html>"
 
     return HTMLResponse(content=html_content)
@@ -54,12 +69,11 @@ def get_stocks_by_symbol_paginated(
     symbol: str = Path(..., title="Symbol"),
     page: int = Query(1, description="Page number", gt=0),
     size: int = Query(30, description="Number of events per page", gt=0),
-    db: Session = Depends(database.get_db)
+    db: Session = Depends(database.get_db),
 ):
-
     stocks_query = (
-        db.query(Stock)
-        .filter(Stock.symbol == symbol)
+        db.query(Stock).
+        filter(Stock.symbol == symbol)
         .order_by(Stock.datetime)
     )
 
