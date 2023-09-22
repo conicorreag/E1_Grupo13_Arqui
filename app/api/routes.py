@@ -8,7 +8,7 @@ from database.models import Stock
 from database import database
 import configparser
 import json
-from api.functions import create_list_from_stock_data
+from api.functions import create_list_from_stock_data, get_location
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 import paho.mqtt.client as mqtt
@@ -117,6 +117,8 @@ async def purchase_validation(request: Request, db: Session = Depends(database.g
 @router.post("stocks/buy")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
+    ip = request.client.host
+    location = get_location(ip)
     transaction = crud.create_transaction(db,user_id=data["user_id"],datetime=data["datetime"],symbol=data["symbol"],quantity=data["quantity"])
     request_id = transaction.id
     client.connect(HOST, PORT)
@@ -127,5 +129,6 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
         "datetime":data["datetime"],
         "deposit_token":"",
         "quantity":data["quantity"],
-        "seller":0
+        "seller":0,
+        "location":location
     })
