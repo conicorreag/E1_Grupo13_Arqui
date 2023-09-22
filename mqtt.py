@@ -12,7 +12,11 @@ HOST = config.get("Credentials", "HOST")
 PORT = 9000
 USER = config.get("Credentials", "USER")
 PASSWORD = config.get("Credentials", "PASSWORD")
-TOPIC = "stocks/info"
+TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
+
+GROUP_ID = 13
+POST_URL = "http://fastapi_app/create_stocks/"
+PATCH_URL = "http://fastapi_app/transactions/"
 
 
 # Espera hasta que la API de FastAPI esté disponible
@@ -47,15 +51,19 @@ def on_connect(client, userdata, flags, rc):
 
 # Callback que se ejecuta cuando se recibe un mensaje
 def on_message(client, userdata, msg):
+    msg_topic = msg.topic
     print(f"Mensaje recibido en el canal {msg.topic}")
-    # print(msg.payload.decode())
-    # print("-------entro aqui -----")
-    
-    api_url = "http://fastapi_app:8000/create_stocks/"
-    #wait_for_fastapi(api_url)
-    # Enviar el mensaje recibido a la API
-    response = requests.post(api_url, json=msg.payload.decode())
-    # response = requests.post(api_url, json=json.loads(msg))
+
+    if msg_topic == "stocks/info":
+        response = requests.post(POST_URL, json=msg.payload.decode())
+
+    elif msg_topic == "stocks/validation":
+        data = json.loads(msg.payload.decode())
+        if data["group_id"] == GROUP_ID:
+            print("Received Our Request Validation")
+            response = requests.patch(PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        else:
+            print(f"Ignored Group {data['group_id']}'s Request")
 
 
 # Crear un cliente MQTT

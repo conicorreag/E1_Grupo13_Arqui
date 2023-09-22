@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models
+import uuid6
 
 
 def create_stock(db: Session, stocks_id: int, datetime: str, symbol: str, shortName: str, price: float, currency: str, source: str):
@@ -27,7 +28,8 @@ def create_transaction(db: Session,user_id:int,datetime:str,symbol:str,quantity:
         symbol=symbol,
         quantity=quantity,
         status="waiting",
-        location=location
+        location=location,
+        request_id=uuid6.uuid7()
     )
     db.add(transaction)
     db.commit()
@@ -35,7 +37,7 @@ def create_transaction(db: Session,user_id:int,datetime:str,symbol:str,quantity:
     return transaction
 
 def validate_transaction(db: Session, request_id:int,validation:bool):
-    transaction = db.query(models.Transaction).filter(models.Transaction.id ==request_id).first()
+    transaction = db.query(models.Transaction).filter(models.Transaction.request_id ==request_id).first()
     if validation:
         transaction.status = "approved"
     else:
@@ -57,3 +59,6 @@ def update_user_wallet(db: Session, user_id: int, amount: float):
     db.commit()
     db.refresh(wallet)
     return wallet
+
+def get_user_wallet(db: Session, user_id: int):
+    return db.query(models.Wallet).filter(models.Wallet.user_id == user_id).first()

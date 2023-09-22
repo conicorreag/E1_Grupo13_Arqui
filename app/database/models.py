@@ -28,6 +28,7 @@ class Stock(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String, index=True)
     user_id = Column(Integer, index=True)
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)

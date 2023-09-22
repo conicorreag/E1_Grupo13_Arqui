@@ -29,22 +29,14 @@ def on_connect(client, userdata, flags, rc):
 def on_connect(client, userdata, flags, rc):
     print("Solicitud de compra enviada: ", rc)
     
-
-
-
-
 router = APIRouter()
-
 
 @router.post("/create_stocks/")
 async def create_stock(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json() 
-    print(data)
     list_data = create_list_from_stock_data(data)
     for stock in list_data:
         object_stock = crud.create_stock(db, stock["stocks_id"], stock["datetime"], stock["symbol"], stock["shortName"], stock["price"], stock["currency"], stock["source"])
-    print("Stocks created")
-
 
 @router.get("/stocks")
 def show_stocks(db: Session = Depends(database.get_db)):
@@ -61,14 +53,7 @@ def show_stocks(db: Session = Depends(database.get_db)):
         .all()
     )
     
-    stocks_formatted = "<br><br>".join([f"<strong>{name}</strong> (<strong>{symbol}</strong>) - Most recent price: {price}" for name, symbol, price in stocks_data])
-    html_content = f"<html><body>{stocks_formatted}</body></html>"
-    
-    return HTMLResponse(content=html_content)
-
-
-
-
+    return stocks_data
 
 @router.get("/stocks/{symbol}")
 def get_stocks_by_symbol_paginated(
@@ -77,50 +62,31 @@ def get_stocks_by_symbol_paginated(
     size: int = Query(30, description="Number of events per page", gt=0),
     db: Session = Depends(database.get_db)
 ):
-    # Realiza la consulta a la base de datos para obtener las filas con el symbol dado
     stocks_query = (
         db.query(Stock)
         .filter(Stock.symbol == symbol)
         .order_by(Stock.datetime)
     )
 
-    total_events = stocks_query.count()
     stocks_paginated = stocks_query.offset((page - 1) * size).limit(size).all()
 
-    # Genera el contenido HTML
-    html_content = f"<html><body><h1>{symbol}</h1><table><tr><th>Datetime</th><th>Price</th><th>Currency</th><th>Source</th></tr>"
-    
-    for stock in stocks_paginated:
-        html_content += f"<tr><td>{stock.datetime}</td><td>{stock.price}</td><td>{stock.currency}</td><td>{stock.source}</td></tr>"
-    
-    html_content += "</table>"
+    return stocks_paginated
 
-    # Agregar enlaces a las páginas anteriores y siguientes
-    total_pages = (total_events - 1) // size + 1
-    if page > 1:
-        prev_page = page - 1
-        html_content += f'<a href="?page={prev_page}&size={size}">Previous</a>'
-    if page < total_pages:
-        next_page = page + 1
-        html_content += f'<a href="?page={next_page}&size={size}">Next</a>'
-
-    html_content += "</body></html>"
-    
-    return HTMLResponse(content=html_content)
-@router.post("/transactions/validate")
+@router.patch("/transactions/")
 async def purchase_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     purchase = data["request_id"]
     validation = data["valid"]
     return crud.validate_transaction(db,purchase,validation)
 
-@router.post("/transactions")
+@router.post("/transactions/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     ip = request.client.host
+    print(f"IP DOX: {ip}")
     location = get_location(ip)
     transaction = crud.create_transaction(db,user_id=data["user_id"],datetime=data["datetime"],symbol=data["symbol"],quantity=data["quantity"], location=location)
-    request_id = transaction.id
+    request_id = transaction.request_id
     broker_message = {
         "request_id":request_id,
         "group_id":GROUP_ID,
@@ -134,12 +100,15 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     client.publish(TOPIC,json.dumps(broker_message))
     return transaction
 
-@router.get("/transactions")
-async def get_user_transactions(request: Request, db: Session = Depends(database.get_db)):
-    data = await request.json()
-    return crud.get_user_transactions(db, data["user_id"])
+@router.get("/transactions/{user_id}")
+async def get_user_transactions(user_id : int, db: Session = Depends(database.get_db)):
+    return crud.get_user_transactions(db, user_id)
 
-@router.put("/wallet")
+@router.put("/wallet/")
 async def update_user_wallet(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     return crud.update_user_wallet(db, data["user_id"], data["amount"])
+
+@router.get("/wallet/{user_id}")
+async def get_user_wallet(user_id : int, db: Session = Depends(database.get_db)):
+    return crud.get_user_wallet(db, user_id)

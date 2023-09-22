@@ -6,3 +6,5 @@ python-dotenv==1.0.0
 requests==2.31.0
 SQLAlchemy==2.0.20
 uvicorn==0.23.2
+ip2geotools
+uuid6
