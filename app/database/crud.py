@@ -19,6 +19,7 @@ def create_stock(db: Session, stocks_id: int, datetime: str, symbol: str, shortN
 
 def get_stock(db: Session, symbol: str):
     return db.query(models.Stock).filter(models.Stock.symbol == symbol).first() 
+
 def create_transaction(db: Session,user_id:int,datetime:str,symbol:str,quantity:float):
     transaction = models.Transaction(
         user_id=user_id,
@@ -31,6 +32,7 @@ def create_transaction(db: Session,user_id:int,datetime:str,symbol:str,quantity:
     db.commit()
     db.refresh(transaction)
     return transaction
+
 def validate_transaction(db: Session, request_id:int,validation:bool):
     transaction = db.query(models.Transaction).filter(models.Transaction.id ==request_id)
     if validation:
@@ -38,3 +40,5 @@ def validate_transaction(db: Session, request_id:int,validation:bool):
     else:
         transaction.status = "rejected"
     db.commit()
+
+

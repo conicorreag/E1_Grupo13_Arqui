@@ -33,3 +33,5 @@ class Transaction(Base):
     symbol = Column(String, index=True)
     quantity = Column(float)
     status = Column(String) #Puede ser aproved, rejected o waiting
+    location = Column(String)
+
