@@ -13,6 +13,7 @@ USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
 TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
 
+
 GROUP_ID = 13
 POST_URL = "http://fastapi_app:8000/create_stocks/"
 PATCH_URL = "http://fastapi_app:8000/transactions/"
@@ -67,6 +68,7 @@ def on_message(client, userdata, msg):
             response = requests.patch(PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
         else:
             print(f"Ignored Group {data['group_id']}'s Request")
+
 
 
 # Crear un cliente MQTT

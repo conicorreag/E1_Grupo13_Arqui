@@ -40,22 +40,21 @@ def get_recent_stocks(db: Session):
     return stocks_data
 
 
-def create_transaction(db: Session, user_id: int, datetime: str, symbol: str, quantity: int, location):
+def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
     recent_stocks = get_recent_stocks(db)
     selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
-    user_wallet = get_user_wallet(db, user_id)
-
+    user_wallet = get_user_wallet(db, user_sub)
     price = selected_stock.price
-    total_price = price * quantity
+    total_price = float(price) * int(quantity)
     transaction_status = "waiting"
 
     if user_wallet.balance - total_price < 0:
         transaction_status = "rejected"
     else:
-        update_user_wallet(db, user_id, -total_price)
+        update_user_wallet(db, user_sub, -total_price)
 
     transaction = models.Transaction(
-        user_id=user_id,
+        user_sub=user_sub,
         datetime=datetime,
         symbol=symbol,
         quantity=quantity,
@@ -63,6 +62,7 @@ def create_transaction(db: Session, user_id: int, datetime: str, symbol: str, qu
         location=location,
         request_id=uuid6.uuid7()
     )
+    
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
@@ -80,14 +80,14 @@ def validate_transaction(db: Session, request_id: int, validation: bool):
     return transaction
 
 
-def get_user_transactions(db: Session, user_id: int):
-    return db.query(models.Transaction).filter(models.Transaction.user_id == user_id).order_by(models.Transaction.datetime).all()
+def get_user_transactions(db: Session, user_sub: str):
+    return db.query(models.Transaction).filter(models.Transaction.user_sub == user_sub).order_by(models.Transaction.datetime).all()
 
 
-def update_user_wallet(db: Session, user_id: int, amount: float):
-    wallet = db.query(models.Wallet).filter(models.Wallet.user_id == user_id).first()
+def update_user_wallet(db: Session, user_sub: str, amount: float):
+    wallet = db.query(models.Wallet).filter(models.Wallet.user_sub == user_sub).first()
     if not wallet:
-        wallet = models.Wallet(user_id=user_id, balance=amount)
+        wallet = models.Wallet(user_sub=user_sub, balance=amount)
         db.add(wallet)
     else:
         wallet.balance += amount
@@ -96,5 +96,6 @@ def update_user_wallet(db: Session, user_id: int, amount: float):
     return wallet
 
 
-def get_user_wallet(db: Session, user_id: int):
-    return db.query(models.Wallet).filter(models.Wallet.user_id == user_id).first()
+def get_user_wallet(db: Session, user_sub: str):
+    reponse =  db.query(models.Wallet).filter(models.Wallet.user_sub == user_sub).first()
+    return reponse

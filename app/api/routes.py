@@ -74,9 +74,10 @@ async def set_validation(request: Request, db: Session = Depends(database.get_db
 @router.post("/transactions/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
+    print(data)
     ip = request.client.host
     location = get_location(ip)
-    transaction = crud.create_transaction(db, user_id=data["user_id"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
+    transaction = crud.create_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
     if (transaction.status != "rejected"):
         send_request(data, transaction)
     return transaction
@@ -97,17 +98,17 @@ def send_request(data, transaction):
     client.publish(TOPIC, json.dumps(broker_message))
 
 
-@router.get("/transactions/{user_id}")
-async def get_user_transactions(user_id: int, db: Session = Depends(database.get_db)):
-    return crud.get_user_transactions(db, user_id)
+@router.get("/transactions/{user_sub}")
+async def get_user_transactions(user_sub: str, db: Session = Depends(database.get_db)):
+    return crud.get_user_transactions(db, user_sub)
 
 
 @router.put("/wallet/")
 async def update_user_wallet(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    return crud.update_user_wallet(db, data["user_id"], data["amount"])
+    return crud.update_user_wallet(db, data["user_sub"], data["amount"])
 
 
-@router.get("/wallet/{user_id}")
-async def get_user_wallet(user_id: int, db: Session = Depends(database.get_db)):
-    return crud.get_user_wallet(db, user_id)
+@router.get("/wallet/{user_sub}")
+async def get_user_wallet(user_sub: str, db: Session = Depends(database.get_db)):
+    return crud.get_user_wallet(db, user_sub)

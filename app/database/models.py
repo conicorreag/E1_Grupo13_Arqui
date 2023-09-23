@@ -17,20 +17,12 @@ class Stock(Base):
     source = Column(String)
 
 
-# class Company(Base):
-#     __tablename__ = "companies"
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     symbol = Column(String, index=True)
-#     shortName = Column(String, index=True)
-#     price = Column(Float)
-#     currency = Column(String)
 
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
     request_id = Column(String, index=True)
-    user_id = Column(Integer, index=True)
+    user_sub = Column(String, index=True)
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)
     quantity = Column(Integer)
@@ -41,5 +33,5 @@ class Transaction(Base):
 class Wallet(Base):
     __tablename__ = "wallets"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)
+    user_sub = Column(String, index=True)
     balance = Column(Float)

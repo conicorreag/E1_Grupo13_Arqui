@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile.api
     ports:
       - "8000:8000"
-    restart: unless-stopped
+    restart: always
     networks:
       - mqtt-network
       - app-network
