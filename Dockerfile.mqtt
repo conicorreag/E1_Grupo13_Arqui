@@ -5,11 +5,11 @@ FROM python:3.11.3
 WORKDIR /mqtt
 
 # Copia el archivo mqtt.py
-COPY credentials.secret /mqtt
+COPY .env /mqtt
 COPY mqtt.py /mqtt
 
 # Instala las dependencias
-RUN pip install paho-mqtt requests configparser
+RUN pip install paho-mqtt requests configparser python-dotenv
 
 # Comando para ejecutar el broker MQTT (ajústalo según el broker que estés utilizando)
 CMD ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]

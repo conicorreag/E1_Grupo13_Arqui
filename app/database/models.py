@@ -24,3 +24,20 @@ class Stock(Base):
 #     shortName = Column(String, index=True)
 #     price = Column(Float)
 #     currency = Column(String)
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String, index=True)
+    user_id = Column(Integer, index=True)
+    datetime = Column(String, index=True)
+    symbol = Column(String, index=True)
+    quantity = Column(Integer)
+    status = Column(String) #Puede ser approved, rejected o waiting
+    location = Column(String)
+
+class Wallet(Base):
+    __tablename__ = "wallets"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    balance = Column(Float)
