@@ -1,5 +1,4 @@
 import paho.mqtt.client as mqtt
-import configparser
 import requests
 import json
 import time
@@ -11,7 +10,7 @@ load_dotenv()
 HOST = os.getenv("HOST")
 PORT = 9000
 USER = os.getenv("USER")
-PASSWORD = os.getenv( "PASSWORD")
+PASSWORD = os.getenv("PASSWORD")
 TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
 
 GROUP_ID = 13
@@ -23,7 +22,7 @@ PATCH_URL = "http://fastapi_app:8000/transactions/"
 def wait_for_fastapi(api_url):
     max_retries = 30  # Número máximo de intentos de conexión
     retries = 0
-    
+
     while retries < max_retries:
         try:
             response = requests.get(api_url)
@@ -32,24 +31,26 @@ def wait_for_fastapi(api_url):
                 break
         except requests.exceptions.RequestException:
             pass
-        
+
         print("Esperando a FastAPI...")
         retries += 1
         time.sleep(2)  # Esperar 2 segundos antes de intentar nuevamente
-    
+
     if retries == max_retries:
         print("No se pudo conectar a FastAPI después de varios intentos.")
 
 # Llamar a la función para esperar a FastAPI
 
 
-
 # Callback que se ejecuta cuando se conecta al broker
+
 def on_connect(client, userdata, flags, rc):
     print("Conectado al broker con código:", rc)
     client.subscribe(TOPIC)
 
 # Callback que se ejecuta cuando se recibe un mensaje
+
+
 def on_message(client, userdata, msg):
     msg_topic = msg.topic
     print(f"Mensaje recibido en el canal {msg.topic}")

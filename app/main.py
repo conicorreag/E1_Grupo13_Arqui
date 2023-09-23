@@ -5,7 +5,6 @@ from database.database import create_tables
 app = FastAPI()
 
 
-
 app.include_router(routes.router)
 
 if __name__ == "__main__":
