@@ -49,25 +49,13 @@ def show_stocks(db: Session = Depends(database.get_db)):
         db.query(Stock.symbol, func.max(cast(Stock.datetime, DateTime)).label("max_datetime"))
         .group_by(Stock.symbol)
         .subquery()
-    )
-    print("paso primera query", subquery)
-
+    )    
     stocks_data = (
-        db.query(Stock.shortName, Stock.symbol, Stock.price)
+        db.query(Stock)
         .join(subquery, and_(Stock.symbol == subquery.c.symbol, cast(Stock.datetime, DateTime) == subquery.c.max_datetime))
-        .group_by(Stock.shortName, Stock.symbol, Stock.price)
         .all()
     )
-
-    stocks_json = [{
-        "nombre_empresa": nombre,
-        "símbolo": símbolo,
-        "precio_acción": precio
-    }for nombre, símbolo, precio in stocks_data
-    ]
-    print("paso segunda query", stocks_json, type(stocks_data[0]))
-
-    return stocks_json
+    return stocks_data
 
 
 @router.get("/stocks/{symbol}")
