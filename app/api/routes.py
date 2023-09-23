@@ -81,6 +81,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
         send_request(data, transaction)
     return transaction
 
+
 def send_request(data, transaction):
     request_id = transaction.request_id
     broker_message = {

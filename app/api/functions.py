@@ -21,7 +21,7 @@ def create_list_from_stock_data(stock_data):
         dict_data["shortName"] = stock_item["shortName"]
         dict_data["price"] = stock_item["price"]
         dict_data["currency"] = stock_item["currency"]
-        
+
         if "source" in stock_item:
             dict_data["source"] = stock_item["source"]
         else:

@@ -25,18 +25,20 @@ def create_stock(db: Session, stocks_id: int, datetime: str, symbol: str, shortN
 def get_stock(db: Session, symbol: str):
     return db.query(models.Stock).filter(models.Stock.symbol == symbol).first()
 
+
 def get_recent_stocks(db: Session):
     subquery = (
         db.query(models.Stock.symbol, func.max(cast(models.Stock.datetime, DateTime)).label("max_datetime"))
         .group_by(models.Stock.symbol)
         .subquery()
-    )    
+    )
     stocks_data = (
         db.query(models.Stock)
         .join(subquery, and_(models.Stock.symbol == subquery.c.symbol, cast(models.Stock.datetime, DateTime) == subquery.c.max_datetime))
         .all()
     )
     return stocks_data
+
 
 def create_transaction(db: Session, user_id: int, datetime: str, symbol: str, quantity: int, location):
     recent_stocks = get_recent_stocks(db)
