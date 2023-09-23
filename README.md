@@ -17,6 +17,8 @@ El Continous Integration solamente se implementó en el backend. Este archivo se
 ### RDOC03: App
 
 Para correr la aplicación de ***manera local*** se deben seguir los siguientes pasos:
+
+
 **Backend:**
 
 -	Clonar repositorio https://github.com/conicorreag/E1_Backend_Grupo13_Arqui
