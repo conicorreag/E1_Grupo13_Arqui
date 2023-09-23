@@ -3,20 +3,20 @@ import configparser
 import requests
 import json
 import time
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-# Leer las Credentials desde el archivo usando configparser
-config = configparser.ConfigParser()
-config.read("credentials.secret")
 
-HOST = config.get("Credentials", "HOST")
+HOST = os.getenv("HOST")
 PORT = 9000
-USER = config.get("Credentials", "USER")
-PASSWORD = config.get("Credentials", "PASSWORD")
+USER = os.getenv("USER")
+PASSWORD = os.getenv( "PASSWORD")
 TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
 
 GROUP_ID = 13
-POST_URL = "http://fastapi_app/create_stocks/"
-PATCH_URL = "http://fastapi_app/transactions/"
+POST_URL = "http://fastapi_app:8000/create_stocks/"
+PATCH_URL = "http://fastapi_app:8000/transactions/"
 
 
 # Espera hasta que la API de FastAPI esté disponible
@@ -55,7 +55,9 @@ def on_message(client, userdata, msg):
     print(f"Mensaje recibido en el canal {msg.topic}")
 
     if msg_topic == "stocks/info":
+        print(msg.payload.decode())
         response = requests.post(POST_URL, json=msg.payload.decode())
+        print(response)
 
     elif msg_topic == "stocks/validation":
         data = json.loads(msg.payload.decode())

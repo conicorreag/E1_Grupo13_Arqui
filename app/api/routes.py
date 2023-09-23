@@ -12,14 +12,14 @@ from api.functions import create_list_from_stock_data, get_location
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 import paho.mqtt.client as mqtt
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-config = configparser.ConfigParser()
-config.read("credentials.secret")
-
-HOST = config.get("Credentials", "HOST")
+HOST = os.getenv("HOST")
 PORT = 9000
-USER = config.get("Credentials", "USER")
-PASSWORD = config.get("Credentials", "PASSWORD")
+USER = os.getenv("USER")
+PASSWORD = os.getenv("PASSWORD")
 TOPIC = "stocks/requests"
 GROUP_ID = "13"
 client = mqtt.Client()
@@ -34,6 +34,7 @@ router = APIRouter()
 @router.post("/create_stocks/")
 async def create_stock(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json() 
+    print(data)
     list_data = create_list_from_stock_data(data)
     for stock in list_data:
         object_stock = crud.create_stock(db, stock["stocks_id"], stock["datetime"], stock["symbol"], stock["shortName"], stock["price"], stock["currency"], stock["source"])
@@ -45,6 +46,7 @@ def show_stocks(db: Session = Depends(database.get_db)):
         .group_by(Stock.symbol)
         .subquery()
     )
+    print("paso primera query",subquery)
     
     stocks_data = (
         db.query(Stock.shortName, Stock.symbol, Stock.price)
@@ -52,9 +54,18 @@ def show_stocks(db: Session = Depends(database.get_db)):
         .group_by(Stock.shortName, Stock.symbol, Stock.price)
         .all()
     )
-    
-    return stocks_data
+    stocks_json = [
+    {
+        "nombre_empresa": nombre,
+        "símbolo": símbolo,
+        "precio_acción": precio
+    }
+    for nombre, símbolo, precio in stocks_data
+]
+    print("paso segunda query",stocks_json,type(stocks_data[0]))
 
+    
+    return stocks_json
 @router.get("/stocks/{symbol}")
 def get_stocks_by_symbol_paginated(
     symbol: str = Path(..., title="Symbol"),
