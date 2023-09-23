@@ -1,4 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
+from sqlalchemy.sql import cast
+from sqlalchemy.types import DateTime
 from . import models
 import uuid6
 
@@ -22,14 +25,39 @@ def create_stock(db: Session, stocks_id: int, datetime: str, symbol: str, shortN
 def get_stock(db: Session, symbol: str):
     return db.query(models.Stock).filter(models.Stock.symbol == symbol).first()
 
+def get_recent_stocks(db: Session):
+    subquery = (
+        db.query(models.Stock.symbol, func.max(cast(models.Stock.datetime, DateTime)).label("max_datetime"))
+        .group_by(models.Stock.symbol)
+        .subquery()
+    )    
+    stocks_data = (
+        db.query(models.Stock)
+        .join(subquery, and_(models.Stock.symbol == subquery.c.symbol, cast(models.Stock.datetime, DateTime) == subquery.c.max_datetime))
+        .all()
+    )
+    return stocks_data
 
-def create_transaction(db: Session, user_id: int, datetime: str, symbol: str, quantity: float, location):
+def create_transaction(db: Session, user_id: int, datetime: str, symbol: str, quantity: int, location):
+    recent_stocks = get_recent_stocks(db)
+    selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
+    user_wallet = get_user_wallet(db, user_id)
+
+    price = selected_stock.price
+    total_price = price * quantity
+    transaction_status = "waiting"
+
+    if user_wallet.balance - total_price < 0:
+        transaction_status = "rejected"
+    else:
+        update_user_wallet(db, user_id, -total_price)
+
     transaction = models.Transaction(
         user_id=user_id,
         datetime=datetime,
         symbol=symbol,
         quantity=quantity,
-        status="waiting",
+        status=transaction_status,
         location=location,
         request_id=uuid6.uuid7()
     )
