@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class Stock(Base):
     __tablename__ = "stocks"
 
@@ -33,8 +34,9 @@ class Transaction(Base):
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)
     quantity = Column(Integer)
-    status = Column(String) #Puede ser approved, rejected o waiting
+    status = Column(String)  # Puede ser approved, rejected o waiting
     location = Column(String)
+
 
 class Wallet(Base):
     __tablename__ = "wallets"
