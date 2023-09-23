@@ -1,4 +1,5 @@
 import json
+from ip2geotools.databases.noncommercial import DbIpCity
 
 
 # Crea una lista de diccionarios con cada instancia de stock
@@ -23,3 +24,8 @@ def create_list_from_stock_data(stock_data):
         list_data.append(dict_data)
 
     return list_data
+
+  
+def get_location(ip):
+    res = DbIpCity.get(ip , api_key="free")
+    return f"Location: {res.city}, {res.region}, {res.country}"
