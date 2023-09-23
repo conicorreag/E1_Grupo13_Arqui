@@ -1,8 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Query, Path
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
-from sqlalchemy.sql import cast
-from sqlalchemy.types import DateTime
 from database import crud
 from database.models import Stock
 from database import database
@@ -45,29 +42,7 @@ async def create_stock(request: Request, db: Session = Depends(database.get_db))
 
 @router.get("/stocks")
 def show_stocks(db: Session = Depends(database.get_db)):
-    subquery = (
-        db.query(Stock.symbol, func.max(cast(Stock.datetime, DateTime)).label("max_datetime"))
-        .group_by(Stock.symbol)
-        .subquery()
-    )
-    print("paso primera query", subquery)
-
-    stocks_data = (
-        db.query(Stock.shortName, Stock.symbol, Stock.price)
-        .join(subquery, and_(Stock.symbol == subquery.c.symbol, cast(Stock.datetime, DateTime) == subquery.c.max_datetime))
-        .group_by(Stock.shortName, Stock.symbol, Stock.price)
-        .all()
-    )
-
-    stocks_json = [{
-        "nombre_empresa": nombre,
-        "símbolo": símbolo,
-        "precio_acción": precio
-    }for nombre, símbolo, precio in stocks_data
-    ]
-    print("paso segunda query", stocks_json, type(stocks_data[0]))
-
-    return stocks_json
+    return crud.get_recent_stocks(db)
 
 
 @router.get("/stocks/{symbol}")
@@ -89,7 +64,7 @@ def get_stocks_by_symbol_paginated(
 
 
 @router.patch("/transactions/")
-async def purchase_validation(request: Request, db: Session = Depends(database.get_db)):
+async def set_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     purchase = data["request_id"]
     validation = data["valid"]
@@ -100,9 +75,14 @@ async def purchase_validation(request: Request, db: Session = Depends(database.g
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     ip = request.client.host
-    print(f"IP DOX: {ip}")
     location = get_location(ip)
     transaction = crud.create_transaction(db, user_id=data["user_id"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
+    if (transaction.status != "rejected"):
+        send_request(data, transaction)
+    return transaction
+
+
+def send_request(data, transaction):
     request_id = transaction.request_id
     broker_message = {
         "request_id": request_id,
@@ -115,7 +95,6 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     }
     client.connect(HOST, PORT)
     client.publish(TOPIC, json.dumps(broker_message))
-    return transaction
 
 
 @router.get("/transactions/{user_id}")
