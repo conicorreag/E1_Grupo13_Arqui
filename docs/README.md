@@ -51,3 +51,13 @@ Para correr la aplicación de ***manera local*** se deben seguir los siguientes 
 
 -   En caso de que haya algun problema con el .env, exportar en la terminal REACT_APP_BACKEND_URL = http://0.0.0.0:8000
 -	Correr npm run start para comenzar.
+
+
+
+### Links
+
+Dominio frontend: https://g13arquitectura.me
+
+Link backend (API Gateway): https://qaui1zfneh.execute-api.us-east-1.amazonaws.com
+
+IP elastica instancia EC2: 54.164.153.10
