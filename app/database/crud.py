@@ -97,5 +97,8 @@ def update_user_wallet(db: Session, user_sub: str, amount: float):
 
 
 def get_user_wallet(db: Session, user_sub: str):
-    reponse =  db.query(models.Wallet).filter(models.Wallet.user_sub == user_sub).first()
-    return reponse
+    response =  db.query(models.Wallet).filter(models.Wallet.user_sub == user_sub).first()
+    print("----------aquiiii---------")
+    print(user_sub)
+    print(response)
+    return response
