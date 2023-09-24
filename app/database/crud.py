@@ -99,11 +99,11 @@ def update_user_wallet(db: Session, user_sub: str, amount: float):
 def get_user_wallet(db: Session, user_sub: str):
     response =  db.query(models.Wallet).filter(models.Wallet.user_sub == user_sub).first()
     if not response:
-        wallet = models.Wallet(user_sub=user_sub, balance=0)
-        db.add(wallet)
+        response = models.Wallet(user_sub=user_sub, balance=0)
+        db.add(response)
         db.commit()
-        db.refresh(wallet)
+        db.refresh(response)
     print("----------aquiiii---------")
     print(user_sub)
-    print(wallet)
-    return wallet
+    print(response)
+    return response
