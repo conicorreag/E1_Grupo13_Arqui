@@ -40,7 +40,7 @@ def get_recent_stocks(db: Session):
     return stocks_data
 
 
-def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
+def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location, general_transaction:bool=False):
     recent_stocks = get_recent_stocks(db)
     selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
     user_wallet = get_user_wallet(db, user_sub)
@@ -53,15 +53,26 @@ def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, q
     else:
         update_user_wallet(db, user_sub, -total_price)
 
-    transaction = models.Transaction(
-        user_sub=user_sub,
-        datetime=datetime,
-        symbol=symbol,
-        quantity=quantity,
-        status=transaction_status,
-        location=location,
-        request_id=uuid6.uuid7()
-    )
+    if general_transaction ==  False:
+    
+        transaction = models.Transaction(
+            user_sub=user_sub,
+            datetime=datetime,
+            symbol=symbol,
+            quantity=quantity,
+            status=transaction_status,
+            request_id=uuid6.uuid7()
+        )
+    else: 
+        transaction = models.GeneralTransactions(
+            user_sub=user_sub,
+            datetime=datetime,
+            symbol=symbol,
+            quantity=quantity,
+            status=transaction_status,
+            location=location,
+            request_id=uuid6.uuid7()
+        )
     
     db.add(transaction)
     db.commit()
@@ -69,8 +80,12 @@ def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, q
     return transaction
 
 
-def validate_transaction(db: Session, request_id: int, validation: bool):
-    transaction = db.query(models.Transaction).filter(models.Transaction.request_id == request_id).first()
+def validate_transaction(db: Session, request_id: int, validation: bool, general_transaction:bool=False):
+    if general_transaction == False:
+        transaction = db.query(models.Transaction).filter(models.Transaction.request_id == request_id).first()
+    else:
+        transaction = db.query(models.GeneralTransactions).filter(models.GeneralTransactions.request_id == request_id).first()
+        
     if validation:
         transaction.status = "approved"
     else:

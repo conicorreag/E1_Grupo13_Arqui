@@ -17,6 +17,8 @@ TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
 GROUP_ID = 13
 POST_URL = "http://fastapi_app:8000/create_stocks/"
 PATCH_URL = "http://fastapi_app:8000/transactions/"
+GENERAL_PATCH_URL = "http://fastapi_app:8000/transactions/general/"
+GENERAL_POST_URL = "http://fastapi_app:8000/transactions/general/"
 
 
 # Espera hasta que la API de FastAPI esté disponible
@@ -63,11 +65,17 @@ def on_message(client, userdata, msg):
 
     elif msg_topic == "stocks/validation":
         data = json.loads(msg.payload.decode())
-        if data["group_id"] == GROUP_ID:
+        if data["group_id"] == GROUP_ID and data["valid"] == True:
             print("Received Our Request Validation")
             response = requests.patch(PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
-        else:
+        elif data["group_id"] != GROUP_ID and data["valid"] == True:
+            response = requests.patch(GENERAL_PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
             print(f"Ignored Group {data['group_id']}'s Request")
+    elif msg_topic == "stocks/requests":
+        data = json.loads(msg.payload.decode())
+        response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
+
+
 
 
 

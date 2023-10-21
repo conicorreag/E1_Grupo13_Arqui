@@ -70,6 +70,19 @@ async def set_validation(request: Request, db: Session = Depends(database.get_db
     validation = data["valid"]
     return crud.validate_transaction(db, purchase, validation)
 
+@router.patch("/transactions/general/")
+async def set_validation(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    purchase = data["request_id"]
+    validation = data["valid"]
+    return crud.validate_transaction(db, purchase, validation,True)
+
+@router.post("/transactions/general/")
+async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    print(data)
+    transaction = crud.create_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"],transactions_general =True)
+    return transactions
 
 @router.post("/transactions/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
