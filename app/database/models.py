@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -35,3 +35,17 @@ class Wallet(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_sub = Column(String, index=True)
     balance = Column(Float)
+
+
+class Prediction(Base):
+    __tablename__ = "transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_sub = Column(String, index=True)
+    job_id = Column(Integer, index=True)
+    symbol = Column(String, index=True)
+    initial_date = Column(String, index=True)
+    final_date = Column(String, index=True)
+    quantity = Column(Integer)
+    final_price = Column(Float)
+    future_prices = Column(ARRAY(Float))
+    status = Column(String)  # Puede ser waiting o ready

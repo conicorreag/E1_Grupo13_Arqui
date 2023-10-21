@@ -8,6 +8,8 @@ from api.functions import create_list_from_stock_data, get_location
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 import os
+import requests
+from datetime import datetime
 load_dotenv()
 
 HOST = os.getenv("HOST")
@@ -16,6 +18,7 @@ USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
 TOPIC = "stocks/requests"
 GROUP_ID = "13"
+JOB_URL = "http://0.0.0.0:8080/job"
 client = mqtt.Client()
 client.username_pw_set(USER, PASSWORD)
 
@@ -112,3 +115,36 @@ async def update_user_wallet(request: Request, db: Session = Depends(database.ge
 @router.get("/wallet/{user_sub}")
 async def get_user_wallet(user_sub: str, db: Session = Depends(database.get_db)):
     return crud.get_user_wallet(db, user_sub)
+
+
+@router.post("/create_prediction/")
+async def create_prediction(request: Request, db: Session = Depends(database.get_db)):
+    request_data = await request.json()
+    today_date = datetime.today()
+    response = requests.post(JOB_URL, request)
+    job_id = response.json().get("job_id")
+    crud.create_prediction(db, request_data["user_sub"], job_id, request_data["symbol"], request_data["final_date"], today_date, request_data["quantity"], 0, [])
+    return response.json()
+
+
+# @router.get("/get_job_result/{job_id}")
+# async def get_job_result(job_id: str):
+#     response = requests.get(f"{JOB_URL}/{job_id}")
+#     return response.json().get("result")
+
+
+@router.get("/user_predictions/{user_sub}")
+async def get_user_predictions(user_sub: str, db: Session = Depends(database.get_db)):
+    predictions = crud.get_user_predictions(db, user_sub)
+    for prediction in predictions:
+        if prediction.status == "waiting":
+            lista_ys = requests.get(f"{JOB_URL}/{prediction.job_id}").json().get("result")
+            if lista_ys:
+                crud.update_prediction(db, prediction.job_id, lista_ys)
+    return crud.get_user_predictions(db, user_sub)
+
+
+@router.get("/prediction/{prediction_id}")
+async def get_prediction(prediction_id: int, db: Session = Depends(database.get_db)):
+    return crud.get_prediction(db, prediction_id)
+    

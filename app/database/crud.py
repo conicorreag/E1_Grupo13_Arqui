@@ -107,3 +107,37 @@ def get_user_wallet(db: Session, user_sub: str):
     print(user_sub)
     print(response)
     return response
+
+
+def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, quantity: int, final_price: float, future_prices: list):
+    prediction = models.Prediction(
+        user_sub=user_sub,
+        job_id=job_id,
+        symbol=symbol,
+        initial_date=initial_date,
+        final_date=final_date,
+        quantity=quantity,
+        final_price=final_price,
+        future_prices=future_prices,
+        status="waiting"
+    )
+    db.add(prediction)
+    db.commit()
+    db.refresh(prediction)
+    return prediction
+
+
+def update_prediction(db: Session, job_id: int, future_prices: list):
+    prediction = db.query(models.Prediction).filter(models.Prediction.job_id == job_id).first()
+    prediction.final_price = future_prices[-1] * prediction.quantity
+    prediction.future_prices = future_prices
+    prediction.status = "ready"
+    db.commit()
+    db.refresh(prediction)
+    return prediction
+
+def get_predictions(db: Session, user_sub: str):
+    return db.query(models.Prediction).filter(models.Prediction.user_sub == user_sub).order_by(models.Prediction.initial_date).all()
+
+def get_prediction(db: Session, prediction_id: int):
+    return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
