@@ -68,9 +68,11 @@ def on_message(client, userdata, msg):
         if data["group_id"] == GROUP_ID and data["valid"] == True:
             print("Received Our Request Validation")
             response = requests.patch(PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+
         elif data["group_id"] != GROUP_ID and data["valid"] == True:
             response = requests.patch(GENERAL_PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
             print(f"Ignored Group {data['group_id']}'s Request")
+            
     elif msg_topic == "stocks/requests":
         data = json.loads(msg.payload.decode())
         response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        

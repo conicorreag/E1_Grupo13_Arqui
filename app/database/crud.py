@@ -51,7 +51,8 @@ def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, q
     if user_wallet.balance - total_price < 0:
         transaction_status = "rejected"
     else:
-        update_user_wallet(db, user_sub, -total_price)
+        pass
+        #update_user_wallet(db, user_sub, -total_price)
 
     if general_transaction ==  False:
     
@@ -77,7 +78,7 @@ def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, q
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
-    return transaction
+    return transaction,total_price
 
 
 def validate_transaction(db: Session, request_id: int, validation: bool, general_transaction:bool=False):

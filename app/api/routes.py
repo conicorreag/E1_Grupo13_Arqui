@@ -4,6 +4,8 @@ from database import crud
 from database.models import Stock
 from database import database
 import json
+from fastapi.responses import RedirectResponse 
+from webpay import webpay_plus_create, webpay_plus_commit
 from api.functions import create_list_from_stock_data, get_location
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
@@ -68,7 +70,15 @@ async def set_validation(request: Request, db: Session = Depends(database.get_db
     data = await request.json()
     purchase = data["request_id"]
     validation = data["valid"]
-    return crud.validate_transaction(db, purchase, validation)
+    status,token = webpay_plus_commit(data["token"])
+    if status == "approved":
+        transaction = crud.validate_transaction(db, purchase, validation)
+        send_request(data, transaction , token)
+    else:
+        crud.validate_transaction(db, purchase, False)
+        return status
+    
+    return RedirectResponse(url="")
 
 @router.patch("/transactions/general/")
 async def set_validation(request: Request, db: Session = Depends(database.get_db)):
@@ -82,7 +92,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     data = await request.json()
     print(data)
     transaction = crud.create_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"],transactions_general =True)
-    return transactions
+    return transaction
 
 @router.post("/transactions/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
@@ -90,25 +100,27 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     print(data)
     ip = request.client.host
     location = get_location(ip)
-    transaction = crud.create_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
+    transaction,total_price = crud.create_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
+    response = webpay_plus_create(transaction.id,total_price)
     if (transaction.status != "rejected"):
-        send_request(data, transaction)
+        send_request(data, transaction,response["token"])
     return transaction
 
 
-def send_request(data, transaction):
+def send_request(data, transaction,token):
     request_id = transaction.request_id
     broker_message = {
         "request_id": request_id,
         "group_id": GROUP_ID,
         "symbol": data["symbol"],
         "datetime": data["datetime"],
-        "deposit_token": "",
+        "deposit_token": token,
         "quantity": data["quantity"],
         "seller": 0
     }
     client.connect(HOST, PORT)
     client.publish(TOPIC, json.dumps(broker_message))
+
 
 
 @router.get("/transactions/{user_sub}")
