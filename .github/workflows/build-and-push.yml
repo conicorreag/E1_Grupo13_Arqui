@@ -35,11 +35,13 @@ jobs:
       env:
         REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
         REGISTRY_ALIAS: a0d1a3g4
+        DOCKERFILE_1: Dcpkerfile.api
+        DOCKERFILE_2: Dcpkerfile.mqtt
         REPOSITORY_1: grupo13-e2
         REPOSITORY_2: grupo13-e2-mqtt
         IMAGE_TAG: latest
-      run: |
-        docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_1:$IMAGE_TAG .
+      run: | 
+        docker build -f $DOCKERFILE_1 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_1:$IMAGE_TAG .
         docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_1:$IMAGE_TAG
-        docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_2:$IMAGE_TAG .
+        docker build -f $DOCKERFILE_2 -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_2:$IMAGE_TAG .
         docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_2:$IMAGE_TAG
