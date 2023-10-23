@@ -1,5 +1,6 @@
 import json
 from ip2geotools.databases.noncommercial import DbIpCity
+from datetime import datetime, timedelta
 # from geopy.distance import distance
 
 # crea una lista de diccionarios con cada instancia de stock
@@ -35,3 +36,9 @@ def create_list_from_stock_data(stock_data):
 def get_location(ip):
     res = DbIpCity.get(ip, api_key="free")
     return f"Location: {res.city}, {res.region}, {res.country}"
+
+
+def sumar_dias_a_fechas(lista_fechas_str, dias_a_sumar):
+    fechas_originales = [datetime.strptime(fecha_str, "%Y-%m-%dT%H:%M:%S.%fZ") for fecha_str in lista_fechas_str]
+    fechas_futuras = [str(fecha + timedelta(days=dias_a_sumar)) for fecha in fechas_originales]
+    return fechas_futuras

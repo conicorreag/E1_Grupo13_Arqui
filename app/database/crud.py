@@ -129,14 +129,14 @@ def get_N(db: Session, symbol: str):
     return approved_count
 
 
-def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, historical_dates: list, quantity: int, final_price: float, future_prices: list):
+def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, future_dates: list, quantity: int, final_price: float, future_prices: list):
     prediction = models.Prediction(
         user_sub=user_sub,
         job_id=job_id,
         symbol=symbol,
         initial_date=initial_date,
         final_date=final_date,
-        historical_dates=historical_dates,
+        future_dates=future_dates,
         quantity=quantity,
         final_price=final_price,
         future_prices=future_prices,

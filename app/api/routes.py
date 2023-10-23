@@ -4,7 +4,7 @@ from database import crud
 from database.models import Stock
 from database import database
 import json
-from api.functions import create_list_from_stock_data, get_location
+from api.functions import create_list_from_stock_data, get_location, sumar_dias_a_fechas
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 import os
@@ -126,19 +126,32 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
     # sacar datos:  # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
     today_date = datetime.today()
     future_date = datetime.strptime(request_data["final_date"], "%Y-%m-%d")
+    print("-------today_date-------")
+    print(today_date)
+    print("-------future_date-------")
+    print(future_date)
     days = (future_date - today_date).days
     initial_date = datetime.now() - timedelta(days=days)
+    print("-------initial_date-------")
+    print(initial_date)
 
     result = crud.get_historical_prices(db, request_data["symbol"], initial_date)
 
     # Formatear los resultados en la estructura deseada
     historical_prices = [{"fecha": entry.datetime, "precio": entry.price} for entry in result]
     historical_dates = [entry.datetime for entry in result]
+    future_dates = sumar_dias_a_fechas(historical_dates, days)
     print("-------historical_dates-------")
     print(historical_dates)
+    print("--------days--------")
+    print(days)
+    print("-------future_dates-------")
+    print(future_dates)
 
 
     N = crud.get_N(db, request_data["symbol"])
+    print("-------N-------")
+    print(N)
 
 
     # Crear un diccionario final
@@ -147,7 +160,7 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
         response = await client.post("http://producer:8080/job", json=datos)
     
     job_id = response.json().get("job_id")
-    crud.create_prediction(db=db, user_sub=request_data["user_sub"], job_id=job_id, symbol=request_data["symbol"], initial_date=today_date, final_date=request_data["final_date"], historical_dates=historical_dates, quantity=request_data["quantity"], final_price=0, future_prices=[])
+    crud.create_prediction(db=db, user_sub=request_data["user_sub"], job_id=job_id, symbol=request_data["symbol"], initial_date=today_date, final_date=request_data["final_date"], future_dates=future_dates, quantity=request_data["quantity"], final_price=0, future_prices=[])
     return response.json()
 
 

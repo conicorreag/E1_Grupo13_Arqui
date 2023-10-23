@@ -45,7 +45,7 @@ class Prediction(Base):
     symbol = Column(String, index=True)
     initial_date = Column(String, index=True)
     final_date = Column(String, index=True)
-    historical_dates = Column(ARRAY(String))
+    future_dates = Column(ARRAY(String))
     quantity = Column(Integer)
     final_price = Column(Float)
     future_prices = Column(ARRAY(Float))
