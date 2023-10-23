@@ -39,6 +39,8 @@ services:
     image: redis:7
     volumes:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
 
 
   producer:
@@ -55,6 +57,8 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     depends_on:
       - redis-broker
+    networks:
+      - app-network
 
   consumer:
     build:
@@ -73,6 +77,8 @@ services:
     environment:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+    networks:
+      - app-network
 
     
 

@@ -14,7 +14,7 @@ app = FastAPI()
 @app.get("/job/{id}")
 def get_job_result(id: str):
     # Get the result of a specific job by its ID
-    result = AsyncResult(id, app=celery_app)
+    result = make_prediction.AsyncResult(id, app=celery_app)
     if result.ready():
         return {"status": result.status, "result": result.result}
     else:

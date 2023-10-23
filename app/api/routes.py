@@ -9,7 +9,8 @@ import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+import httpx
 load_dotenv()
 
 HOST = os.getenv("HOST")
@@ -18,7 +19,7 @@ USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
 TOPIC = "stocks/requests"
 GROUP_ID = "13"
-JOB_URL = "http://0.0.0.0:8080/job"
+JOB_URL = "http://producer:8080/job"
 client = mqtt.Client()
 client.username_pw_set(USER, PASSWORD)
 
@@ -120,17 +121,35 @@ async def get_user_wallet(user_sub: str, db: Session = Depends(database.get_db))
 @router.post("/create_prediction/")
 async def create_prediction(request: Request, db: Session = Depends(database.get_db)):
     request_data = await request.json()
+
+    #request = {user_sub: "123", symbol: "AAPL", final_date: "2020-10-01", quantity: 10}
+    # sacar datos:  # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
     today_date = datetime.today()
-    response = requests.post(JOB_URL, request)
+    future_date = datetime.strptime(request_data["final_date"], "%Y-%m-%d")
+    days = (future_date - today_date).days
+    initial_date = datetime.now() - timedelta(days=days)
+
+    result = crud.get_historical_prices(db, request_data["symbol"], initial_date)
+
+    # Formatear los resultados en la estructura deseada
+    historical_prices = [{"fecha": entry.datetime, "precio": entry.price} for entry in result]
+    historical_dates = [entry.datetime for entry in result]
+    print("-------historical_dates-------")
+    print(historical_dates)
+
+
+    N = crud.get_N(db, request_data["symbol"])
+
+
+    # Crear un diccionario final
+    datos = {"historial": historical_prices, "N": N}
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://producer:8080/job", json=datos)
+    
     job_id = response.json().get("job_id")
-    crud.create_prediction(db, request_data["user_sub"], job_id, request_data["symbol"], request_data["final_date"], today_date, request_data["quantity"], 0, [])
+    crud.create_prediction(db=db, user_sub=request_data["user_sub"], job_id=job_id, symbol=request_data["symbol"], initial_date=today_date, final_date=request_data["final_date"], historical_dates=historical_dates, quantity=request_data["quantity"], final_price=0, future_prices=[])
     return response.json()
 
-
-# @router.get("/get_job_result/{job_id}")
-# async def get_job_result(job_id: str):
-#     response = requests.get(f"{JOB_URL}/{job_id}")
-#     return response.json().get("result")
 
 
 @router.get("/user_predictions/{user_sub}")
@@ -138,7 +157,10 @@ async def get_user_predictions(user_sub: str, db: Session = Depends(database.get
     predictions = crud.get_user_predictions(db, user_sub)
     for prediction in predictions:
         if prediction.status == "waiting":
-            lista_ys = requests.get(f"{JOB_URL}/{prediction.job_id}").json().get("result")
+            async with httpx.AsyncClient() as client:
+                job_id = prediction.job_id
+                response = await client.get(f"http://producer:8080/job/{job_id}")
+                lista_ys = response.json().get("result")
             if lista_ys:
                 crud.update_prediction(db, prediction.job_id, lista_ys)
     return crud.get_user_predictions(db, user_sub)

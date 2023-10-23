@@ -38,14 +38,26 @@ class Wallet(Base):
 
 
 class Prediction(Base):
-    __tablename__ = "transactions"
+    __tablename__ = "predictions"
     id = Column(Integer, primary_key=True, index=True)
     user_sub = Column(String, index=True)
-    job_id = Column(Integer, index=True)
+    job_id = Column(String, index=True)
     symbol = Column(String, index=True)
     initial_date = Column(String, index=True)
     final_date = Column(String, index=True)
+    historical_dates = Column(ARRAY(String))
     quantity = Column(Integer)
     final_price = Column(Float)
     future_prices = Column(ARRAY(Float))
     status = Column(String)  # Puede ser waiting o ready
+
+
+class GeneralTransactions(Base):
+    __tablename__ = "general_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String, index=True)
+    user_sub = Column(String, index=True)
+    datetime = Column(String, index=True)
+    symbol = Column(String, index=True)
+    quantity = Column(Integer)
+    status = Column(String)  # Puede ser approved, rejected o waiting

@@ -3,6 +3,7 @@ from sqlalchemy import func, and_
 from sqlalchemy.sql import cast
 from sqlalchemy.types import DateTime
 from . import models
+from datetime import datetime, timedelta
 import uuid6
 
 
@@ -109,13 +110,33 @@ def get_user_wallet(db: Session, user_sub: str):
     return response
 
 
-def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, quantity: int, final_price: float, future_prices: list):
+def get_historical_prices(db: Session, symbol: str, initial_date: str):
+    query = db.query(models.Stock).filter(models.Stock.symbol == symbol, cast(models.Stock.datetime, DateTime) >= initial_date).all()
+    return query
+
+
+def get_N(db: Session, symbol: str):
+    # Calcula la fecha de hace 7 días desde hoy
+    seven_days_ago = datetime.now() - timedelta(days=7)
+
+    # Realiza la consulta para contar las transacciones aprobadas
+    approved_count = db.query(models.GeneralTransactions) \
+        .filter(models.GeneralTransactions.symbol == symbol) \
+        .filter(models.GeneralTransactions.status == 'approved') \
+        .filter(cast(models.GeneralTransactions.datetime, DateTime) >= seven_days_ago) \
+        .count()
+
+    return approved_count
+
+
+def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, historical_dates: list, quantity: int, final_price: float, future_prices: list):
     prediction = models.Prediction(
         user_sub=user_sub,
         job_id=job_id,
         symbol=symbol,
         initial_date=initial_date,
         final_date=final_date,
+        historical_dates=historical_dates,
         quantity=quantity,
         final_price=final_price,
         future_prices=future_prices,
@@ -136,7 +157,7 @@ def update_prediction(db: Session, job_id: int, future_prices: list):
     db.refresh(prediction)
     return prediction
 
-def get_predictions(db: Session, user_sub: str):
+def get_user_predictions(db: Session, user_sub: str):
     return db.query(models.Prediction).filter(models.Prediction.user_sub == user_sub).order_by(models.Prediction.initial_date).all()
 
 def get_prediction(db: Session, prediction_id: int):
