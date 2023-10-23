@@ -35,8 +35,8 @@ jobs:
       env:
         REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
         REGISTRY_ALIAS: a0d1a3g4
-        DOCKERFILE_1: Dcpkerfile.api
-        DOCKERFILE_2: Dcpkerfile.mqtt
+        DOCKERFILE_1: Dockerfile.api
+        DOCKERFILE_2: Dockerfile.mqtt
         REPOSITORY_1: grupo13-e2
         REPOSITORY_2: grupo13-e2-mqtt
         IMAGE_TAG: latest
