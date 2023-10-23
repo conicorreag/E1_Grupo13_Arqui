@@ -3,25 +3,24 @@ from transbank.error.transbank_error import TransbankError
 from transbank.webpay.webpay_plus.transaction import Transaction
 
 
-URL_COMPRA = ""
+URL_COMPRA = "https://webhook.site/d6883dbb-d806-491e-b313-c6c622d3ee7b"
 
-def webpay_plus_create(transaction_id,amount):
+async def webpay_plus_create(transaction_id,amount):
     print("Webpay Plus Transaction.create")
 
     session_id = str(random.randrange(1000000, 99999999))
     amount = random.randrange(10000, 1000000)
-    response = (Transaction()).create(transaction_id, session_id, amount, URL_COMPRA)
+    response = (Transaction()).create(str(transaction_id), session_id, amount, URL_COMPRA)
     return {"token":response["token"],
            "url":response["url"]}
 
-def webpay_plus_commit(data):
-    token = data("token_ws")
+async def webpay_plus_commit(token):
     print("commit for token_ws: {}".format(token))
-
-    response = (Transaction()).commit(token=token)
+    response =  (Transaction()).commit(token=token)
     print("response: {}".format(response))
-    if response.response_code:
-        if response.response_code == 0:
+    print(f'response code : {response["response_code"]}')
+    if response["response_code"] is not None:
+        if response["response_code"] == 0:
             return "approved",token
         else:
             return "rejected",token
