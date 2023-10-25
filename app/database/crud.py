@@ -92,6 +92,8 @@ def add_transaction_to_database(db: Session, transaction):
 
 def validate_general_transaction(db: Session, request_id: int, validation: bool):
     transaction = db.query(models.GeneralTransactions).filter(models.GeneralTransactions.request_id == request_id).first()
+    if not transaction:
+        return None
     status = "rejected"
     if validation:
         status = "approved"

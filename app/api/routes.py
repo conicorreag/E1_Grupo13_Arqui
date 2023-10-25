@@ -101,7 +101,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     response =  await webpay_plus_create(transaction.id, transaction.total_price)
     if (transaction.status != "rejected"):
         send_request(transaction,response["token"])
-    return {"url":response["url"],"request_id":transaction.request_id,"token":response["token"]}
+    return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"]})
 
 
 def send_request(transaction,token):

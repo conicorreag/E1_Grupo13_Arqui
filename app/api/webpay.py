@@ -4,13 +4,14 @@ from transbank.webpay.webpay_plus.transaction import Transaction
 
 
 URL_COMPRA = "https://webhook.site/d6883dbb-d806-491e-b313-c6c622d3ee7b"
+URL_2 ="localhost:3000/compraDetalle/"
 
 async def webpay_plus_create(transaction_id,amount):
     print("Webpay Plus Transaction.create")
 
     session_id = str(random.randrange(1000000, 99999999))
     amount = random.randrange(10000, 1000000)
-    response = (Transaction()).create(str(transaction_id), session_id, amount, URL_COMPRA)
+    response = (Transaction()).create(str(transaction_id), session_id, amount, URL_2)
     return {"token":response["token"],
            "url":response["url"]}
 
