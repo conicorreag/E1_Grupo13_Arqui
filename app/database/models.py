@@ -27,6 +27,7 @@ class Transaction(Base):
     symbol = Column(String, index=True)
     quantity = Column(Integer)
     status = Column(String)  # Puede ser approved, rejected o waiting
+    total_price = Column(Float)
     location = Column(String)
 
 
@@ -45,3 +46,4 @@ class GeneralTransactions(Base):
     symbol = Column(String, index=True)
     quantity = Column(Integer)
     status = Column(String)  # Puede ser approved, rejected o waiting
+    total_price = Column(Float)
