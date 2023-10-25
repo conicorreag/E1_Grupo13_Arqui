@@ -39,61 +39,80 @@ def get_recent_stocks(db: Session):
     )
     return stocks_data
 
+def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
 
-def create_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location, general_transaction:bool=False):
-    recent_stocks = get_recent_stocks(db)
-    selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
+    total_price = get_transaction_total_price(db, symbol, quantity)
     user_wallet = get_user_wallet(db, user_sub)
-    price = selected_stock.price
-    total_price = float(price) * int(quantity)
-    transaction_status = "waiting"
 
+    transaction_status = "waiting"
     if user_wallet.balance - total_price < 0:
         transaction_status = "rejected"
-    else:
-        pass
-        #update_user_wallet(db, user_sub, -total_price)
 
-    if general_transaction ==  False:
-    
-        transaction = models.Transaction(
-            user_sub=user_sub,
-            datetime=datetime,
-            symbol=symbol,
-            quantity=quantity,
-            status=transaction_status,
-            request_id=uuid6.uuid7()
-        )
-    else: 
-        transaction = models.GeneralTransactions(
+    transaction = models.Transaction(
             user_sub=user_sub,
             datetime=datetime,
             symbol=symbol,
             quantity=quantity,
             status=transaction_status,
             location=location,
-            request_id=uuid6.uuid7()
+            request_id=uuid6.uuid7(),
+            total_price=total_price
         )
-    
+    add_transaction_to_database(db, transaction)
+    return transaction
+
+
+def create_general_transaction(db: Session, datetime: str, symbol: str, quantity: int):
+    total_price = get_transaction_total_price(db, symbol, quantity)
+    transaction_status = "waiting"
+    transaction = models.GeneralTransactions(
+            datetime=datetime,
+            symbol=symbol,
+            quantity=quantity,
+            status=transaction_status,
+            request_id=uuid6.uuid7(),
+            total_price=total_price
+        )
+    add_transaction_to_database(db, transaction)
+    return transaction
+
+
+def get_transaction_total_price(db: Session, symbol: str, quantity: int):
+    recent_stocks = get_recent_stocks(db)
+    selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
+    price = selected_stock.price
+    return float(price) * int(quantity)
+
+
+def add_transaction_to_database(db: Session, transaction):
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
-    return transaction,total_price
 
 
-def validate_transaction(db: Session, request_id: int, validation: bool, general_transaction:bool=False):
-    if general_transaction == False:
-        transaction = db.query(models.Transaction).filter(models.Transaction.request_id == request_id).first()
-    else:
-        transaction = db.query(models.GeneralTransactions).filter(models.GeneralTransactions.request_id == request_id).first()
-        
+def validate_general_transaction(db: Session, request_id: int, validation: bool):
+    transaction = db.query(models.GeneralTransactions).filter(models.GeneralTransactions.request_id == request_id).first()
+    status = "rejected"
     if validation:
-        transaction.status = "approved"
-    else:
-        transaction.status = "rejected"
+        status = "approved"
+    set_transaction_validation(db, transaction, status)
+    return transaction
+
+
+def validate_user_transaction(db: Session, request_id: int, status: str):
+    transaction = db.query(models.Transaction).filter(models.Transaction.request_id == request_id).first()
+    set_transaction_validation(db, transaction, status)
+    return transaction
+
+
+def set_transaction_validation(db: Session, transaction, status):
+    transaction.status = status
     db.commit()
     db.refresh(transaction)
-    return transaction
+
+
+def make_user_pay_transaction(db: Session, transaction):
+    update_user_wallet(db, transaction.user_sub, -transaction.total_price)
 
 
 def get_user_transactions(db: Session, user_sub: str):
@@ -119,7 +138,4 @@ def get_user_wallet(db: Session, user_sub: str):
         db.add(response)
         db.commit()
         db.refresh(response)
-    print("----------aquiiii---------")
-    print(user_sub)
-    print(response)
     return response

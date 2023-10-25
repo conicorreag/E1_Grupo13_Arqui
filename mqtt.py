@@ -57,25 +57,18 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     msg_topic = msg.topic
     print(f"Mensaje recibido en el canal {msg.topic}")
+    data = json.loads(msg.payload.decode())
 
     if msg_topic == "stocks/info":
-        print(msg.payload.decode())
         response = requests.post(POST_URL, json=msg.payload.decode())
-        print(response)
 
     elif msg_topic == "stocks/validation":
-        data = json.loads(msg.payload.decode())
-        if data["group_id"] == GROUP_ID and data["valid"] == True:
-            print("Received Our Request Validation")
-            response = requests.patch(PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
-
-        elif data["group_id"] != GROUP_ID and data["valid"] == True:
+        if data["group_id"] != GROUP_ID:
             response = requests.patch(GENERAL_PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
-            print(f"Ignored Group {data['group_id']}'s Request")
             
     elif msg_topic == "stocks/requests":
-        data = json.loads(msg.payload.decode())
-        response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
+        if data["group_id"] != GROUP_ID:
+            response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
 
 
 
