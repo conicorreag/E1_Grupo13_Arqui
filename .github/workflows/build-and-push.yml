@@ -1,0 +1,57 @@
+name: Build and Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+        
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::571102053161:role/grupo13-githubactions-ecr-workflows
+        aws-region: us-east-1
+    
+    - name: Login to Amazon ECR
+      id: login-ecr-public
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registry-type: public
+
+    - name: Build, tag, and push docker image to Amazon ECR Public
+      env:
+        REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+        REGISTRY_ALIAS: a0d1a3g4
+        DOCKERFILE_API: Dockerfile.api
+        DOCKERFILE_MQTT: Dockerfile.mqtt
+        REPOSITORY_API: grupo13-e2
+        REPOSITORY_MQTT: grupo13-e2-mqtt
+        IMAGE_TAG: latest
+
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        HOST: ${{ secrets.HOST }}
+        USER: ${{ secrets.USER }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+        PORT: ${{ secrets.PORT }}
+        GROUP_ID: ${{ secrets.GROUP_ID }}
+      run: | 
+        docker build -f $DOCKERFILE_API -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG .
+        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG
+        docker build -f $DOCKERFILE_MQTT -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_MQTT:$IMAGE_TAG .
+        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_MQTT:$IMAGE_TAG

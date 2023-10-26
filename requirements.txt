@@ -11,4 +11,5 @@ pytest==7.4.2
 transbank-sdk
 ip2geotools
 uuid6
+httpx==0.24.1
 
