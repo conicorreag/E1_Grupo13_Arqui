@@ -27,6 +27,7 @@ class Transaction(Base):
     symbol = Column(String, index=True)
     quantity = Column(Integer)
     status = Column(String)  # Puede ser approved, rejected o waiting
+    total_price = Column(Float)
     location = Column(String)
 
 
@@ -35,6 +36,7 @@ class Wallet(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_sub = Column(String, index=True)
     balance = Column(Float)
+
 
 
 class Prediction(Base):
@@ -52,6 +54,7 @@ class Prediction(Base):
     status = Column(String)  # Puede ser waiting o ready
 
 
+
 class GeneralTransactions(Base):
     __tablename__ = "general_transactions"
     id = Column(Integer, primary_key=True, index=True)
@@ -61,3 +64,5 @@ class GeneralTransactions(Base):
     symbol = Column(String, index=True)
     quantity = Column(Integer)
     status = Column(String)  # Puede ser approved, rejected o waiting
+    total_price = Column(Float)
+
