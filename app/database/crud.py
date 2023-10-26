@@ -57,9 +57,16 @@ def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: s
             status=transaction_status,
             location=location,
             request_id=uuid6.uuid7(),
-            total_price=total_price
+            total_price=total_price,
+            token=""
         )
     add_transaction_to_database(db, transaction)
+    return transaction
+
+def add_token_to_transaction(db: Session, transaction, token):
+    transaction.token = token
+    db.commit()
+    db.refresh(transaction)
     return transaction
 
 
@@ -102,8 +109,8 @@ def validate_general_transaction(db: Session, request_id: int, validation: bool)
     return transaction
 
 
-def validate_user_transaction(db: Session, request_id: int, status: str):
-    transaction = db.query(models.Transaction).filter(models.Transaction.request_id == request_id).first()
+def validate_user_transaction(db: Session, token: str, status: str):
+    transaction = db.query(models.Transaction).filter(models.Transaction.token == token).first()
     set_transaction_validation(db, transaction, status)
     return transaction
 

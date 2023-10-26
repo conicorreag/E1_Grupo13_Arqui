@@ -75,9 +75,9 @@ def get_stocks_by_symbol_paginated(
 @router.patch("/transactions/")
 async def set_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    purchase = data["request_id"]
+    token_purchase = data["token"]
     status,token =  await webpay_plus_commit(data["token"])
-    transaction = crud.validate_user_transaction(db, purchase, status)
+    transaction = crud.validate_user_transaction(db, token_purchase, status)
     send_validation(transaction)
     crud.make_user_pay_transaction(db, transaction)
     return transaction
@@ -105,6 +105,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     location = get_location(ip)
     transaction = crud.create_user_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
     response =  await webpay_plus_create(transaction.id, transaction.total_price)
+    crud.add_token_to_transaction(db, transaction.id, response["token"])
     if (transaction.status != "rejected"):
         send_request(transaction,response["token"])
     return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"]})
@@ -165,14 +166,9 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
     # sacar datos:  # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
     today_date = datetime.today()
     future_date = datetime.strptime(request_data["final_date"], "%Y-%m-%d")
-    print("-------today_date-------")
-    print(today_date)
-    print("-------future_date-------")
-    print(future_date)
     days = (future_date - today_date).days
     initial_date = datetime.now() - timedelta(days=days)
-    print("-------initial_date-------")
-    print(initial_date)
+   
 
     result = crud.get_historical_prices(db, request_data["symbol"], initial_date)
 
