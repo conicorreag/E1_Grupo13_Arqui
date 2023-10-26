@@ -29,6 +29,7 @@ class Transaction(Base):
     status = Column(String)  # Puede ser approved, rejected o waiting
     total_price = Column(Float)
     location = Column(String)
+    token = Column(String)
 
 
 class Wallet(Base):
