@@ -108,7 +108,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     crud.add_token_to_transaction(db, transaction, response["token"])
     if (transaction.status != "rejected"):
         send_request(transaction,response["token"])
-    return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"]})
+    return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"], "status":transaction.status})
 
 
 def send_request(transaction,token):
