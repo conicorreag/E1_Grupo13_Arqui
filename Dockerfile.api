@@ -8,11 +8,6 @@ WORKDIR /app
 COPY app/ /app
 COPY requirements.txt /app
 
-FROM alpine
-RUN --mount=type=secret,id=DB_USER \
-  cat /run/secrets/DB_USER
-  
-
 # Instala las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
