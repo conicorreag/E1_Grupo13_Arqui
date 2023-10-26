@@ -7,7 +7,29 @@ WORKDIR /app
 # Copia los archivos necesarios
 COPY app/ /app
 COPY requirements.txt /app
-COPY .env /app
+
+FROM alpine
+RUN --mount=type=secret,id=DB_USER \
+  cat /run/secrets/DB_USER
+RUN --mount=type=secret,id=DB_PASSWORD \
+  cat /run/secrets/DB_PASSWORD
+RUN --mount=type=secret,id=DB_NAME \
+  cat /run/secrets/DB_NAME
+RUN --mount=type=secret,id=DB_PORT \
+  cat /run/secrets/DB_PORT
+RUN --mount=type=secret,id=DB_HOST \
+  cat /run/secrets/DB_HOST
+RUN --mount=type=secret,id=HOST \
+  cat /run/secrets/HOST
+RUN --mount=type=secret,id=USER \
+  cat /run/secrets/USER
+RUN --mount=type=secret,id=PASSWORD \
+  cat /run/secrets/PASSWORD
+RUN --mount=type=secret,id=PORT \
+  cat /run/secrets/PORT
+RUN --mount=type=secret,id=GROUP_ID \
+  cat /run/secrets/GROUP_ID
+  
 
 # Instala las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
