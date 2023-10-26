@@ -28,7 +28,7 @@ async def webpay_plus_commit(token):
         if response["response_code"] == 0:
             return "approved",token
         else:
-            return "",token
+            return "rejected",token
     else:
         return "user canceled",False
    

@@ -76,11 +76,11 @@ def get_stocks_by_symbol_paginated(
 async def set_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     token_purchase = data["token"]
-    status,token =  await webpay_plus_commit(data["token"])
+    status,token =  await webpay_plus_commit(token_purchase)
     transaction = crud.validate_user_transaction(db, token_purchase, status)
     send_validation(transaction)
     crud.make_user_pay_transaction(db, transaction)
-    return transaction
+    return {"status": status}
     
 
 @router.patch("/transactions/general/")
