@@ -1,4 +1,3 @@
-version: '3'
 services:
   fastapi_app:
     image: public.ecr.aws/a0d1a3g4/grupo13-e2:latest
