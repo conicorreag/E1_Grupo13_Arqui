@@ -63,7 +63,7 @@ def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: s
     add_transaction_to_database(db, transaction)
     return transaction
 
-def add_token_to_transaction(db: Session, transaction, token):
+def add_token_to_transaction(db: Session, transaction: object, token):
     transaction.token = token
     db.commit()
     db.refresh(transaction)

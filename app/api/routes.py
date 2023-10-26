@@ -105,7 +105,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     location = get_location(ip)
     transaction = crud.create_user_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
     response =  await webpay_plus_create(transaction.id, transaction.total_price)
-    crud.add_token_to_transaction(db, transaction.id, response["token"])
+    crud.add_token_to_transaction(db, transaction, response["token"])
     if (transaction.status != "rejected"):
         send_request(transaction,response["token"])
     return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"]})
