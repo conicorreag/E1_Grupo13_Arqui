@@ -119,10 +119,13 @@ async def get_user_wallet(user_sub: str, db: Session = Depends(database.get_db))
 
 
 @router.post("/create_prediction/")
+
+# LE LLEGA {final_date: '2024-02-01', quantity: '8', symbol: 'AMZN', user_sub: 'google-oauth2|101188055086216254198'}
+
 async def create_prediction(request: Request, db: Session = Depends(database.get_db)):
     request_data = await request.json()
+    print("llegó a crear-----------------------")
 
-    #request = {user_sub: "123", symbol: "AAPL", final_date: "2020-10-01", quantity: 10}
     # sacar datos:  # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
     today_date = datetime.today()
     future_date = datetime.strptime(request_data["final_date"], "%Y-%m-%d")
@@ -156,9 +159,12 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
 
     # Crear un diccionario final
     datos = {"historial": historical_prices, "N": N}
+    
     async with httpx.AsyncClient() as client:
         response = await client.post("http://producer:8080/job", json=datos)
     
+    print("-------response-------")
+    print(response.json())
     job_id = response.json().get("job_id")
     crud.create_prediction(db=db, user_sub=request_data["user_sub"], job_id=job_id, symbol=request_data["symbol"], initial_date=today_date, final_date=request_data["final_date"], future_dates=future_dates, quantity=request_data["quantity"], final_price=0, future_prices=[])
     return response.json()
@@ -183,3 +189,9 @@ async def get_user_predictions(user_sub: str, db: Session = Depends(database.get
 async def get_prediction(prediction_id: int, db: Session = Depends(database.get_db)):
     return crud.get_prediction(db, prediction_id)
     
+
+@router.get("/job_heartbeat/")
+async def heartbeat_job():
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://producer:8080/heartbeat")
+    return response.json()

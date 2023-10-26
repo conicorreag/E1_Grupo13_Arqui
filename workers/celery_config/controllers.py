@@ -19,7 +19,6 @@ def calcular_prediccion(data):
     modelo = LinearRegression()
     modelo.fit(fechas, precios)
 
-
     # Realiza predicciones
     lista_ys = modelo.predict(fechas)
     

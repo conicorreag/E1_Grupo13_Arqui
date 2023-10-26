@@ -12,6 +12,8 @@ def make_prediction(data):
     # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
 
     historial = data.get("historial")
+
+    # Almacena fechas y precios en listas separadas
     fechas = [entry["fecha"] for entry in historial]
     precios = [entry["precio"] for entry in historial]
 
@@ -26,7 +28,6 @@ def make_prediction(data):
     # Crear el modelo de regresión lineal
     modelo = LinearRegression()
     modelo.fit(fechas, precios)
-
 
     # Realiza predicciones
     lista_ys = modelo.predict(fechas).tolist()  # Convierte el ndarray a una lista
