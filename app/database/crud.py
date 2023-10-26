@@ -63,7 +63,7 @@ def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: s
     return transaction
 
 
-def create_general_transaction(db: Session, datetime: str, symbol: str, quantity: int):
+def create_general_transaction(db: Session, datetime: str, symbol: str, quantity: int, request_id: str):
     total_price = get_transaction_total_price(db, symbol, quantity)
     transaction_status = "waiting"
     transaction = models.GeneralTransactions(
@@ -71,7 +71,7 @@ def create_general_transaction(db: Session, datetime: str, symbol: str, quantity
             symbol=symbol,
             quantity=quantity,
             status=transaction_status,
-            request_id=uuid6.uuid7(),
+            request_id=request_id,
             total_price=total_price
         )
     add_transaction_to_database(db, transaction)

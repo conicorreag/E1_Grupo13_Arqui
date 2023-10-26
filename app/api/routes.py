@@ -94,7 +94,7 @@ async def set_validation(request: Request, db: Session = Depends(database.get_db
 @router.post("/transactions/general/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    transaction = crud.create_general_transaction(db, datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"])
+    transaction = crud.create_general_transaction(db, datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], request_id=data["request_id"])
     return transaction
 
 
