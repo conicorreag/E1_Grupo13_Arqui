@@ -48,6 +48,7 @@ services:
         context: ./workers
         dockerfile: Dockerfile
     command: uvicorn producer:app --reload --host 0.0.0.0 --port 8080
+    restart: always
     volumes:
       - ./workers:/opt/
     expose:
@@ -65,6 +66,7 @@ services:
       context: ./workers
       dockerfile: Dockerfile
     deploy:
+    restart: always
       # replicas scales containers
       replicas: 1
     # concurrency specifies number of worker
