@@ -4,10 +4,13 @@ from database import crud
 from database.models import Stock
 from database import database
 import json
-from api.functions import create_list_from_stock_data, get_location
+from api.functions import create_list_from_stock_data, get_location, sumar_dias_a_fechas
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 import os
+import requests
+from datetime import datetime, timedelta
+import httpx
 load_dotenv()
 
 HOST = os.getenv("HOST")
@@ -16,6 +19,7 @@ USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
 TOPIC = "stocks/requests"
 GROUP_ID = "13"
+JOB_URL = "http://producer:8080/job"
 client = mqtt.Client()
 client.username_pw_set(USER, PASSWORD)
 
@@ -112,3 +116,82 @@ async def update_user_wallet(request: Request, db: Session = Depends(database.ge
 @router.get("/wallet/{user_sub}")
 async def get_user_wallet(user_sub: str, db: Session = Depends(database.get_db)):
     return crud.get_user_wallet(db, user_sub)
+
+
+@router.post("/create_prediction/")
+
+# LE LLEGA {final_date: '2024-02-01', quantity: '8', symbol: 'AMZN', user_sub: 'google-oauth2|101188055086216254198'}
+
+async def create_prediction(request: Request, db: Session = Depends(database.get_db)):
+    request_data = await request.json()
+    print("llegó a crear-----------------------")
+
+    # sacar datos:  # {historial: [{fecha: 1/2/5, precio: 1}, {fecha: 132/5, precio: 12}], N: 3}
+    today_date = datetime.today()
+    future_date = datetime.strptime(request_data["final_date"], "%Y-%m-%d")
+    print("-------today_date-------")
+    print(today_date)
+    print("-------future_date-------")
+    print(future_date)
+    days = (future_date - today_date).days
+    initial_date = datetime.now() - timedelta(days=days)
+    print("-------initial_date-------")
+    print(initial_date)
+
+    result = crud.get_historical_prices(db, request_data["symbol"], initial_date)
+
+    # Formatear los resultados en la estructura deseada
+    historical_prices = [{"fecha": entry.datetime, "precio": entry.price} for entry in result]
+    historical_dates = [entry.datetime for entry in result]
+    future_dates = sumar_dias_a_fechas(historical_dates, days)
+    print("-------historical_dates-------")
+    print(historical_dates)
+    print("--------days--------")
+    print(days)
+    print("-------future_dates-------")
+    print(future_dates)
+
+
+    N = crud.get_N(db, request_data["symbol"])
+    print("-------N-------")
+    print(N)
+
+
+    # Crear un diccionario final
+    datos = {"historial": historical_prices, "N": N}
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://producer:8080/job", json=datos)
+    
+    print("-------response-------")
+    print(response.json())
+    job_id = response.json().get("job_id")
+    crud.create_prediction(db=db, user_sub=request_data["user_sub"], job_id=job_id, symbol=request_data["symbol"], initial_date=today_date, final_date=request_data["final_date"], future_dates=future_dates, quantity=request_data["quantity"], final_price=0, future_prices=[])
+    return response.json()
+
+
+
+@router.get("/user_predictions/{user_sub}")
+async def get_user_predictions(user_sub: str, db: Session = Depends(database.get_db)):
+    predictions = crud.get_user_predictions(db, user_sub)
+    for prediction in predictions:
+        if prediction.status == "waiting":
+            async with httpx.AsyncClient() as client:
+                job_id = prediction.job_id
+                response = await client.get(f"http://producer:8080/job/{job_id}")
+                lista_ys = response.json().get("result")
+            if lista_ys:
+                crud.update_prediction(db, prediction.job_id, lista_ys)
+    return crud.get_user_predictions(db, user_sub)
+
+
+@router.get("/prediction/{prediction_id}")
+async def get_prediction(prediction_id: int, db: Session = Depends(database.get_db)):
+    return crud.get_prediction(db, prediction_id)
+    
+
+@router.get("/job_heartbeat/")
+async def heartbeat_job():
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://producer:8080/heartbeat")
+    return response.json()

@@ -3,6 +3,7 @@ from sqlalchemy import func, and_
 from sqlalchemy.sql import cast
 from sqlalchemy.types import DateTime
 from . import models
+from datetime import datetime, timedelta
 import uuid6
 
 
@@ -107,3 +108,57 @@ def get_user_wallet(db: Session, user_sub: str):
     print(user_sub)
     print(response)
     return response
+
+
+def get_historical_prices(db: Session, symbol: str, initial_date: str):
+    query = db.query(models.Stock).filter(models.Stock.symbol == symbol, cast(models.Stock.datetime, DateTime) >= initial_date).all()
+    return query
+
+
+def get_N(db: Session, symbol: str):
+    # Calcula la fecha de hace 7 días desde hoy
+    seven_days_ago = datetime.now() - timedelta(days=7)
+
+    # Realiza la consulta para contar las transacciones aprobadas
+    approved_count = db.query(models.GeneralTransactions) \
+        .filter(models.GeneralTransactions.symbol == symbol) \
+        .filter(models.GeneralTransactions.status == 'approved') \
+        .filter(cast(models.GeneralTransactions.datetime, DateTime) >= seven_days_ago) \
+        .count()
+
+    return approved_count
+
+
+def create_prediction(db: Session, user_sub: str, job_id: int, symbol: str, initial_date: str, final_date: str, future_dates: list, quantity: int, final_price: float, future_prices: list):
+    prediction = models.Prediction(
+        user_sub=user_sub,
+        job_id=job_id,
+        symbol=symbol,
+        initial_date=initial_date,
+        final_date=final_date,
+        future_dates=future_dates,
+        quantity=quantity,
+        final_price=final_price,
+        future_prices=future_prices,
+        status="waiting"
+    )
+    db.add(prediction)
+    db.commit()
+    db.refresh(prediction)
+    return prediction
+
+
+def update_prediction(db: Session, job_id: int, future_prices: list):
+    prediction = db.query(models.Prediction).filter(models.Prediction.job_id == job_id).first()
+    prediction.final_price = future_prices[-1] * prediction.quantity
+    prediction.future_prices = future_prices
+    prediction.status = "ready"
+    db.commit()
+    db.refresh(prediction)
+    return prediction
+
+def get_user_predictions(db: Session, user_sub: str):
+    return db.query(models.Prediction).filter(models.Prediction.user_sub == user_sub).order_by(models.Prediction.initial_date).all()
+
+def get_prediction(db: Session, prediction_id: int):
+    return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
