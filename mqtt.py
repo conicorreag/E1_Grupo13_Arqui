@@ -16,7 +16,6 @@ TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
 
 GROUP_ID = 13
 POST_URL = "http://fastapi_app:8000/create_stocks/"
-PATCH_URL = "http://fastapi_app:8000/transactions/"
 GENERAL_PATCH_URL = "http://fastapi_app:8000/transactions/general/"
 GENERAL_POST_URL = "http://fastapi_app:8000/transactions/general/"
 

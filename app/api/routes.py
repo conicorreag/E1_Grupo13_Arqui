@@ -72,7 +72,7 @@ def get_stocks_by_symbol_paginated(
     return stocks_paginated
 
 
-@router.patch("/transactions/")
+@router.post("/transactions_webpay/")
 async def set_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     token_purchase = data["token"]
