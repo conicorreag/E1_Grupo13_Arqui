@@ -39,9 +39,7 @@ services:
 
 
   producer:
-    build:
-        context: ./workers
-        dockerfile: Dockerfile
+    image: public.ecr.aws/a0d1a3g4/grupo13-e2-workers:latest
     command: uvicorn producer:app --reload --host 0.0.0.0 --port 8080
     restart: always
     volumes:
@@ -57,9 +55,7 @@ services:
       - app-network
 
   consumer:
-    build:
-      context: ./workers
-      dockerfile: Dockerfile
+    image: public.ecr.aws/a0d1a3g4/grupo13-e2-workers:latest
     deploy:
       # replicas scales containers
       replicas: 1
