@@ -11,7 +11,7 @@ HOST = os.getenv("HOST")
 PORT = 9000
 USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
-TOPIC = [("stocks/info", 0), ("stocks/validation", 0)]
+TOPIC = [("stocks/info", 0), ("stocks/validation", 0),("stocks/requests", 0)]
 
 
 GROUP_ID = 13
