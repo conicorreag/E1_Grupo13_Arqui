@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - cd-ci
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -39,17 +40,7 @@ jobs:
         REPOSITORY_API: grupo13-e2
         REPOSITORY_MQTT: grupo13-e2-mqtt
         IMAGE_TAG: latest
-
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        DB_HOST: ${{ secrets.DB_HOST }}
-        DB_PORT: ${{ secrets.DB_PORT }}
-        DB_NAME: ${{ secrets.DB_NAME }}
-        HOST: ${{ secrets.HOST }}
-        USER: ${{ secrets.USER }}
-        PASSWORD: ${{ secrets.PASSWORD }}
-        PORT: ${{ secrets.PORT }}
-        GROUP_ID: ${{ secrets.GROUP_ID }}
+        
       run: | 
         docker build -f $DOCKERFILE_API -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG .
         docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG

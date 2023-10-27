@@ -6,7 +6,6 @@ WORKDIR /mqtt
 
 # Copia el archivo mqtt.py
 COPY mqtt.py /mqtt
-COPY .env /mqtt
 
 # Instala las dependencias
 RUN pip install paho-mqtt requests configparser python-dotenv 
