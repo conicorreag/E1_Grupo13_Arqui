@@ -28,7 +28,7 @@ services:
       - db-volume:/var/lib/postgresql/data 
       # To persist the data in the database we have a volume that persist after container deletion
       # and copy the files from the container to the volume.
-  
+
   redis-broker:
     # https://redis.com/solutions/use-cases/messaging/
     image: redis:7
@@ -39,7 +39,9 @@ services:
 
 
   producer:
-    image: public.ecr.aws/a0d1a3g4/grupo13-e2-workers:latest
+    build:
+        context: ./workers
+        dockerfile: Dockerfile
     command: uvicorn producer:app --reload --host 0.0.0.0 --port 8080
     restart: always
     volumes:
@@ -55,7 +57,9 @@ services:
       - app-network
 
   consumer:
-    image: public.ecr.aws/a0d1a3g4/grupo13-e2-workers:latest
+    build:
+      context: ./workers
+      dockerfile: Dockerfile
     deploy:
       # replicas scales containers
       replicas: 1
