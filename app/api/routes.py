@@ -83,7 +83,8 @@ async def set_validation(request: Request, db: Session = Depends(database.get_db
         status = "user canceled"
     transaction = crud.validate_user_transaction(db, token_purchase, status)
     send_validation(transaction)
-    crud.make_user_pay_transaction(db, transaction)
+    if transaction.status == "approved":
+        crud.make_user_pay_transaction(db, transaction)
     return {"status": status}
     
 
