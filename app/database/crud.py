@@ -41,8 +41,9 @@ def get_recent_stocks(db: Session):
     return stocks_data
 
 def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
-
-    total_price = get_transaction_total_price(db, symbol, quantity)
+    selected_stock = get_selected_stock(db, symbol)
+    total_price = get_transaction_total_price(quantity, selected_stock)
+    
     user_wallet = get_user_wallet(db, user_sub)
 
     transaction_status = "waiting"
