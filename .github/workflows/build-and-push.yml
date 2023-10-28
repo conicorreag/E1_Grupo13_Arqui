@@ -74,8 +74,4 @@ jobs:
         aws s3 cp deploy.zip s3://grupo13-codedeploy/deploy.zip
     
     - name: Create Codedeploy Deployment 
-      run: aws deploy create-deployment \
-        --application-name grupo13-codedeploy \
-        --deployment-group-name grupo13-deployment-group \
-        --s3-location bucket=grupo13-codedeploy,key=deploy.zip,bundleType=zip \
-        --file-exists-behavior OVERWRITE
+      run: aws deploy create-deployment --application-name grupo13-codedeploy --deployment-group-name grupo13-deployment-group --s3-location bucket=grupo13-codedeploy,key=deploy.zip,bundleType=zip --file-exists-behavior OVERWRITE
