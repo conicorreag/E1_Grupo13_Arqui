@@ -99,7 +99,7 @@ services:
     depends_on:
       - fastapi_app
     volumes:
-      - ./mqtt.py:/mqtt/mqtt.py
+      - ./mqtt:/mqtt/mqtt
 
 
 networks:
