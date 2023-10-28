@@ -71,7 +71,10 @@ def add_token_to_transaction(db: Session, transaction: object, token):
 
 
 def create_general_transaction(db: Session, datetime: str, symbol: str, quantity: int, request_id: str ):
-    total_price = get_transaction_total_price(db, symbol, quantity)
+    selected_stock = get_selected_stock(db, symbol)
+    if not selected_stock:
+        return None
+    total_price = get_transaction_total_price(quantity, selected_stock)
     transaction_status = "waiting"
     transaction = models.GeneralTransactions(
             datetime=datetime,
@@ -85,12 +88,13 @@ def create_general_transaction(db: Session, datetime: str, symbol: str, quantity
     return transaction
 
 
-def get_transaction_total_price(db: Session, symbol: str, quantity: int):
-    recent_stocks = get_recent_stocks(db)
-    selected_stock = next((stock for stock in recent_stocks if stock.symbol == symbol), None)
+def get_transaction_total_price(quantity: int, selected_stock):
     price = selected_stock.price
     return float(price) * int(quantity)
 
+def get_selected_stock(db: Session, symbol : str):
+    recent_stocks = get_recent_stocks(db)
+    return next((stock for stock in recent_stocks if stock.symbol == symbol), None)
 
 def add_transaction_to_database(db: Session, transaction):
     db.add(transaction)

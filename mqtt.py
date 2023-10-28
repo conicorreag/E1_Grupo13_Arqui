@@ -57,21 +57,47 @@ def on_message(client, userdata, msg):
     msg_topic = msg.topic
     print(f"Mensaje recibido en el canal {msg.topic}")
     data = json.loads(msg.payload.decode())
+    print(data)
 
     if msg_topic == "stocks/info":
         response = requests.post(POST_URL, json=msg.payload.decode())
 
     elif msg_topic == "stocks/validation":
+        if not validate_request_patch(data): return
         if data["group_id"] != GROUP_ID:
             response = requests.patch(GENERAL_PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
             
     elif msg_topic == "stocks/requests":
+        if not validate_request(data): return
         if data["group_id"] != GROUP_ID:
             response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
 
+def validate_request_patch(validation):
+    required_keys = ["request_id", "group_id", "valid"]
+    for key in required_keys:
+        if key not in validation:
+            return False
+        if not validation[key]:
+            return False
+        if key == "valid":
+            return type(validation["valid"]) == bool
+    return True
 
+def validate_request(request):
+    required_keys = ["request_id", "group_id", "symbol", "datetime", "quantity"]
+    for key in required_keys:
+        if key not in request.keys():
+            return False
+        if not request[key]:
+            return False
+        if key == "quantity":
+            return quantity_check(request["quantity"])
+    return True
 
-
+def quantity_check(quantity_variable):
+    if type(quantity_variable) == str:
+        return quantity_variable.isnumeric()
+    return True
 
 # Crear un cliente MQTT
 client = mqtt.Client()
