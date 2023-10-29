@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import requests
 import json
 import time
+from datetime import datetime
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -68,8 +69,10 @@ def on_message(client, userdata, msg):
             response = requests.patch(GENERAL_PATCH_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
             
     elif msg_topic == "stocks/requests":
+        print("me esta llegando ",data)
         if not validate_request(data): return
         if data["group_id"] != GROUP_ID:
+            data["datetime"] = datetime.fromisoformat(data["datetime"])
             response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
 
 def validate_request_patch(validation):
@@ -90,9 +93,22 @@ def validate_request(request):
             return False
         if not request[key]:
             return False
+        if key == "datetime":
+            if is_iso8601(request["datetime"]) == False:
+                print("era falso")
+                return False
         if key == "quantity":
             return quantity_check(request["quantity"])
     return True
+
+def is_iso8601(date_string):
+    try:
+        print("prev date:", date_string)
+        new_date=datetime.fromisoformat(date_string)
+        print("new date:", new_date)
+        return True
+    except ValueError:
+        return False
 
 def quantity_check(quantity_variable):
     if type(quantity_variable) == str:
