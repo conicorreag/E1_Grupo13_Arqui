@@ -91,7 +91,7 @@ services:
       context: .
       dockerfile: Dockerfile.mqtt
     ports:
-      - "9001:9001"
+      - "9003:9002"
     networks:
       - mqtt-network
     restart: always
