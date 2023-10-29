@@ -84,7 +84,7 @@ jobs:
           --application-name $DEPLOYMENT_APPLICATION_NAME \
           --deployment-group-name $DEPLOYMENT_GROUP_NAME \
           --s3-location bucket=$DEPLOYMENT_BUCKET_NAME,key=deploy.zip,bundleType=zip \
-          --file-exists-behavior OVERWRITE | | jq -r '.deploymentId' )
+          --description "Automatic deployment fron github commit ${{github.sha}} | jq -r '.deploymentId' )
         echo "deploymentId=$deploymentId" >> $GITHUB_OUTPUT
       
     - name: Wait until deployment is done
