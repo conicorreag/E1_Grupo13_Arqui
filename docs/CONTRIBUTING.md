@@ -1,1 +1,1 @@
-You can contribute to this repo! all the times you want!
+You can contribute to this repo!
