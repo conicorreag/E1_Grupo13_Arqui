@@ -197,8 +197,12 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
     # Crear un diccionario final
     datos = {"historial": historical_prices, "N": N}
     
-    async with httpx.AsyncClient() as client:
+    # async with httpx.AsyncClient() as client:
+    #     response = await client.post("http://producer:8080/job", json=datos)
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post("http://producer:8080/job", json=datos)
+
     
     print("-------response-------")
     print(response.json())
@@ -229,7 +233,6 @@ async def get_prediction(prediction_id: int, db: Session = Depends(database.get_
 
 @router.get("/job_heartbeat/")
 async def heartbeat_job():
-    return {"status": "true"}
-#     async with httpx.AsyncClient() as client:
-#         response = await client.get("http://producer:8080/heartbeat")
-#     return response.json()
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://producer:8080/heartbeat")
+    return response.json()
