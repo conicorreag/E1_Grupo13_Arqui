@@ -1,114 +1,63 @@
-name: Build and Push to ECR
+name: Deploy to S3 and Invalidate Cache
 
 on:
   push:
     branches:
       - main
-      - cd-ci
-    paths-ignore:
-      - "docs/**"
 
 permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read  # This is required for actions/checkout
+  id-token: write
+  contents: read
 
-        
 jobs:
-  changes:
+  S3PackageUpload:
     runs-on: ubuntu-latest
-
-    outputs:
-      api: ${{ steps.filter.outputs.api }}
+    env:
+      BUCKET_NAME: e1g13frontend
+      REGION: us-east-2
+      DIST_ID: E73LQEDSM3Z4U
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Detect Changes
-        uses: dorny/paths-filter@v2
-        id: filter
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          filters: |
-            api:
-              - 'api/**'
-  
-  build-and-push:
-    needs: changes
-    if: ${{ needs.changes.outputs.api == 'true' }}
-    runs-on: ubuntu-latest
+          node-version: '18'
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Install dependencies
+        run: npm install
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::571102053161:role/grupo13-githubactions-ecr-workflows
-        aws-region: us-east-1
-    
-    - name: Login to Amazon ECR
-      id: login-ecr-public
-      uses: aws-actions/amazon-ecr-login@v2
-      with:
-        registry-type: public
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
 
-    - name: Build, tag, and push docker image to Amazon ECR Public
-      env:
-        REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
-        REGISTRY_ALIAS: a0d1a3g4
-        DOCKERFILE_API: Dockerfile.api
-        DOCKERFILE_MQTT: Dockerfile.mqtt
-        DOCKERFILE_WORKERS: workers/Dockerfile
-        REPOSITORY_API: grupo13-e2
-        REPOSITORY_MQTT: grupo13-e2-mqtt
-        REPOSITORY_WORKERS: grupo13-e2-workers
-        IMAGE_TAG: latest
+      - name: Crear auth_config.json en el proyecto
+        run: |
+          cat <<EOL > src/auth_config.json
+          {
+            "domain": "dev-e36pqbtayc7ny77l.us.auth0.com",
+            "clientId": "hVIzZHjzYH9yjVhYdEskCuwi2awvxNHg",
+            "audience": "https://dev-e36pqbtayc7ny77l.us.auth0.com/api/v2/"
+          }
+          EOL
 
-      run: | 
-        docker build -f $DOCKERFILE_API -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG .
-        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_API:$IMAGE_TAG
-        docker build -f $DOCKERFILE_MQTT -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_MQTT:$IMAGE_TAG .
-        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_MQTT:$IMAGE_TAG
-        docker build -f $DOCKERFILE_WORKERS -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_WORKERS:$IMAGE_TAG .
-        docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY_WORKERS:$IMAGE_TAG
-  
-  deploy-to-ec2:
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    needs: [build-and-push]
+      - name: Build Frontend with npm
+        run: npm run build
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Deploy changes to S3
+        run: aws s3 sync build/ s3://${{ env.BUCKET_NAME }} --delete
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::571102053161:role/grupo13-githubactions-ecr-workflows
-        aws-region: us-east-1
-    
-    - name: Zip Artifacts to deploy 
-      run: zip -r deploy.zip scripts/ appspec.yml docker-compose.production.yml
-    
-    - name: Zip Artifacts And upload to S3
-      run: 
-        zip -r deploy.zip scripts/ appspec.yml docker-compose.production.yml | 
-        aws s3 cp deploy.zip s3://grupo13-codedeploy/deploy.zip
-    
-    - name: Create Codedeploy Deployment
-      id: codedeploy-deploy-trigger 
-      env:
-        DEPLOYMENT_APPLICATION_NAME: grupo13-codedeploy
-        DEPLOYMENT_GROUP_NAME: grupo13-deployment-group
-        DEPLOYMENT_BUCKET_NAME: grupo13-codedeploy
-      run: |
-        deploymentId=$( aws deploy create-deployment \
-          --application-name $DEPLOYMENT_APPLICATION_NAME \
-          --deployment-group-name $DEPLOYMENT_GROUP_NAME \
-          --s3-location bucket=$DEPLOYMENT_BUCKET_NAME,key=deploy.zip,bundleType=zip \
-          --description "Automatic deployment fron github commit ${{github.sha}}" | jq -r '.deploymentId' )
-        echo "deploymentId=$deploymentId" >> $GITHUB_OUTPUT
-      
-    - name: Wait until deployment is done
-      run: aws deploy wait deployment-successful --deployment-id ${{steps.codedeploy-deploy-trigger.outputs.deploymentId}}
+      - name: Create CloudFront Invalidation
+        id: create_invalidation
+        run: |
+          verificationId=$(aws cloudfront create-invalidation --distribution-id ${{ env.DIST_ID }} --paths "/*" | jq -r '.Invalidation.Id')
+          echo "verificationId=$verificationId" >> $GITHUB_OUTPUT
+
+      - name: Cache Invalidation Verification
+        run: aws cloudfront get-invalidation --id ${{ steps.create_invalidation.outputs.verificationId }} --distribution-id ${{ env.DIST_ID }}
+         
