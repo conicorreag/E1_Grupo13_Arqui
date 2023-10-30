@@ -91,7 +91,7 @@ services:
       context: .
       dockerfile: Dockerfile.mqtt
     ports:
-      - "9003:9002"
+      - "9001:9001"
     networks:
       - mqtt-network
     restart: always
@@ -99,7 +99,7 @@ services:
     depends_on:
       - fastapi_app
     volumes:
-      - ./mqtt.py:/mqtt/mqtt.py
+      - ./mqtt:/mqtt/mqtt
 
 
 networks:
