@@ -1,65 +1,77 @@
-## Documentación E1 grupo 13
+### Documentación E2 grupo 13
 
-### RDOC02: Continous Integration
+### RDOC1 Diagrama Anexo
 
-El Continous Integration solamente se implementó en el backend. Este archivo se ejecuta cuando se hace un pull request hacia el main. Para esto se ejecutan los siguientes pasos:
+El diagrama se encuentra en la misma carpeta docs.
 
- 1. Se clona o verifica el código fuente del repositorio en la máquina virtual donde se ejecuta el trabajo a través de la acción Github Actions. 
- 2. Se configura el entorno de Python también a través de una acción predefinida de Github Actions. Para esto se usa la versión 3.10.12 de Python.
- 3. Se instalan las dependencias contenidas en el archivo requirements.txt con el comando ```pip install -r requirements.txt```.
- 4. Se corre el linter descargado que en este caso es flake8 para Python. Este realiza un análisis estático del código para mejorar la calidad de este. Se hace a través del comando ```flake8 .```.
- 5. Se ejecuta un test trivial definido en el backend. Esto se hace mediante pytest que se ejecuta a través de ```pytest```.
+### RDOC2 Integración con WebPay
 
- Si todos estos pasos se cumplen correctamente se da la opción de hacer el pull request del main que se hace, por ejemplo, cada vez que se hace merge a este.
+Para realizar la integración con Webpay, se siguieron los siguientes pasos:
 
+1. Importar modulo transbank-sdk y añadirlo a requirements.txt 
+2. Crear Funcion webpay_plus_create() que con el metodo transactions.create crea una transaccion en webpay y retorna URL de pago de webpay y token. 
+3. Crear Función webpay_commit() con transactions.commit de la librería Transbank encargada de confirmar y devuelve el estado de la transacción. 
+4. Crear transacción con webpay_plus_create.
+5. Añadir vista en frontend con formulario encargado de redirigir a URL entregado, pasando token como valor. 
+6. Añadir vista al frontend encargada de recibir al usuario luego de pagar en webpay y además recibir token entregado, este puede ser token_ws o tbk_token dependiendo del flujo de pago.   
+7. Revisar el estado de la transacción en el backend mediante la funcion webpay_commit y en el caso de ser exitoso, descontar dinero de wallet de usuario
 
+### RDOC3 Aplicación en Serverless
 
-### RDOC03: App
+No se realizó este requisito ni la función lamda.
 
-Para correr la aplicación de ***manera local*** se deben seguir los siguientes pasos:
+### RDOC4 Llamadas a la API 
 
+A continuación se detallan las llamadas a la API realizadas desde el frontend:
 
-**Backend:**
+(POST) g13arquitectura.me/create_prediction/ : Crea una predicción en la base de datos, recibe un json con los datos de la predicción y retorna un json con las fechas y precios futuros calculados.
 
--	Clonar repositorio https://github.com/conicorreag/E1_Backend_Grupo13_Arqui
--	En el terminal, correr pip install -r requirements.txt para asegurarse de tener todas las dependencias necesarias.
--	Crear un .env con las credenciales:
+{      
+      final_date: predictionDate,
+      quantity: cantidad,
+      symbol: symbol,
+      user_sub: user.sub      
+}
 
-        DB_USER=conicorrea
-        DB_PASSWORD=calafquen
-        DB_HOST=postgres
-        DB_PORT=5432
-        DB_NAME=e1_ass
+(GET) g13arquitectura.me/job_heartbeat/ : Recibe un json con el estado de un job y lo actualiza en la base de datos, para mostrar el estado de la página principal
 
-        HOST=broker.legit.capital
-        USER=students
-        PORT=9000
-        PASSWORD=iic2173-2023-2-students
-        GROUP_ID=13
+(GET) g13arquitectura.me/stocks/ : Retorna un json con los datos de las acciones de la bolsa de valores recibidas desde el broker.
 
--   Correr docker-compose build y docker-compose up
--	Correr el mqtt con python mqtt.py
--	Correr la API con python app/main.py
+(GET) g13arquitectura.me/stocks/{symbol} : Retorna un json con los precios históricos del stock con el símbolo seleccionado.
 
+(POST) g13arquitectura.me/transactions/ : Recibe desde el front la cantidad y el símbolo de la acción a comprar, y retorna un json con el estado de la transacción.
 
+EJEMPLO DE JSON A ENVIAR:
 
-**Frontend:**
+{
+        user_sub: user_sub,
+        datetime: datetime,
+        symbol: symbol,
+        quantity: quantity,
 
--	Clonar repositorio https://github.com/conicorreag/E1_Frontend_Grupo13_Arqui 
--	En el terminal, correr npm install para asegurarse de tener todas las dependencias necesarias.
--	Crear un .env con las credenciales:
+}
 
-        REACT_APP_BACKEND_URL = "http://0.0.0.0:8000"
+(GET) g13arquitectura.me/transactions/{user_sub} : Retorna el listado de las transacciones históricas realizadas por el usuario.
 
--   En caso de que haya algun problema con el .env, exportar en la terminal REACT_APP_BACKEND_URL = http://0.0.0.0:8000
--	Correr npm run start para comenzar.
+(POST) g13arquitectura.me/transactions_webpay/ : Recibe desde el front el token de la transacción y un bool que indica si fue anulada o no por el usuario.
 
+EJEMPLO DE JSON A ENVIAR:
 
+{
+        token: token,
+        is_tbk: anulada,
+}
 
-### Links
+(GET) g13arquitectura.me/user_predictions/{user_sub} : Retorna el detalle de las predicciones históricas realizadas por el usuario.
 
-Dominio frontend: https://g13arquitectura.me
+(PUT) g13arquitectura.me/wallet/ : Recibe desde el front la cantidad de dinero a añadir en la billetera virtual.
 
-Link backend (API Gateway): https://qaui1zfneh.execute-api.us-east-1.amazonaws.com
+EJEMPLO DE JSON A ENVIAR:
 
-IP elastica instancia EC2: 54.164.153.10
+{
+        user_sub: user.sub,
+        amount: parseFloat(monto)
+}
+
+(GET) g13arquitectura.me/wallet/{user_sub} : Retorna el saldo de la billetera virtual del usuario.
+
