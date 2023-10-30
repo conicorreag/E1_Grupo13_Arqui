@@ -76,10 +76,15 @@ def get_stocks_by_symbol_paginated(
 async def set_validation(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     token_purchase = data["token"]
-    status,token =  await webpay_plus_commit(token_purchase)
+    is_tbk = data["tbk"]
+    if(is_tbk == False):
+        status,token =  await webpay_plus_commit(token_purchase)
+    elif(is_tbk == True):
+        status = "user canceled"
     transaction = crud.validate_user_transaction(db, token_purchase, status)
     send_validation(transaction)
-    crud.make_user_pay_transaction(db, transaction)
+    if transaction.status == "approved":
+        crud.make_user_pay_transaction(db, transaction)
     return {"status": status}
     
 
@@ -192,8 +197,12 @@ async def create_prediction(request: Request, db: Session = Depends(database.get
     # Crear un diccionario final
     datos = {"historial": historical_prices, "N": N}
     
-    async with httpx.AsyncClient() as client:
+    # async with httpx.AsyncClient() as client:
+    #     response = await client.post("http://producer:8080/job", json=datos)
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post("http://producer:8080/job", json=datos)
+
     
     print("-------response-------")
     print(response.json())
@@ -224,7 +233,6 @@ async def get_prediction(prediction_id: int, db: Session = Depends(database.get_
 
 @router.get("/job_heartbeat/")
 async def heartbeat_job():
-    return {"status": "true"}
-#     async with httpx.AsyncClient() as client:
-#         response = await client.get("http://producer:8080/heartbeat")
-#     return response.json()
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://producer:8080/heartbeat")
+    return response.json()

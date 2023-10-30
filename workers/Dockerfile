@@ -13,7 +13,6 @@ RUN pip install --upgrade pip
 COPY ./requirements.txt /opt/requirements.txt 
 RUN chmod +x /opt/requirements.txt
 RUN pip install -r requirements.txt
-RUN pip install celery
 
 # copy project
 COPY . /opt/
