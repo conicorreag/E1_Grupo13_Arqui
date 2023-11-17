@@ -67,3 +67,30 @@ class GeneralTransactions(Base):
     status = Column(String)  # Puede ser approved, rejected o waiting
     total_price = Column(Float)
 
+class StocksAvailable(Base):
+    __tablename__ = "stocks_available"
+    id = Column(Integer, primary_key=True, index=True)
+    stock_id = Column(String, index=True)
+    symbol = Column(String, index=True)
+    quantity = Column(Integer)
+
+class Auction(Base):
+    __tablename__ = "auctions"
+    id = Column(Integer, primary_key=True, index=True)
+    auction_id = Column(String)
+    quantity = Column(Integer)
+    stock_id = Column(String)
+    group_id = Column(String)
+    status = Column(String)
+
+class Proposal(Base):
+    __tablename__ = "proposals"
+    id = Column(Integer, primary_key=True, index=True)
+    proposal_id = Column(String)
+    auction_id = Column(String)
+    quantity = Column(Integer)
+    stock_id = Column(String)
+    group_id = Column(String)
+    type= Column(String)
+
+

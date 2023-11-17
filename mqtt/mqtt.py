@@ -72,7 +72,15 @@ def on_message(client, userdata, msg):
         print("me esta llegando ",data)
         if not validate_request(data): return
         if data["group_id"] != GROUP_ID:
-            response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
+            response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})   
+
+    elif msg_topic == "stocks/auctions":
+        print("me esta llegando ",data)
+        if data["group_id"] != GROUP_ID and data["proposal_id"]!= "":
+            response = requests.post("", data=json.dumps(data), headers={'Content-type': 'application/json'})
+        else:
+            response = requests.patch("", data=json.dumps(data), headers={'Content-type': 'application/json'})
+
 
 def validate_request_patch(validation):
     required_keys = ["request_id", "group_id", "valid"]

@@ -208,3 +208,57 @@ def get_user_predictions(db: Session, user_sub: str):
 
 def get_prediction(db: Session, prediction_id: int):
     return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
+### Manejo de auctions
+def create_proposal(db:Session,type:str, auction_id:str):
+    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id)
+    proposal = models.Proposal(
+        proposal_id = uuid6.uuid7(),
+        auction_id = Auction.auction_id,
+        quantity = Auction.quantity,
+        stock_id = Auction.stock_id,
+        group_id = Auction.group_id,
+        type= "proposal"
+    )
+    db.add(proposal)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+def answer_proposal(db:Session, proposal_id:str, answer:str):
+    Proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id)
+    proposal = models.Proposal(
+        proposal_id = Proposal.proposal_id,
+        auction_id = Proposal.auction_id,
+        quantity = Proposal.quantity,
+        stock_id = Proposal.stock_id,
+        group_id = Proposal.group_id,
+        type= answer
+    )
+
+    db.add(proposal)
+    db.commit()
+    db.refresh(Proposal)
+    if answer == "acceptance":
+        Auction = db.query(models.Auction).filter(models.Auction.auction_id == proposal.auction_id)
+        Auction.status = "closed"
+        db.commit()
+        db.refresh(Auction)
+        Auctions  = db.query(models.Proposal).filter(models.Proposal.auction_id == proposal.auction_id)
+        return Auctions
+    return Proposal
+
+def create_auction(db: Session, symbol: int, quantity: int):
+    Stock =db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol)
+    auction = models.Auction(
+        auction_id = uuid6.uuid7(),
+        proposal_id="",
+        quantity = quantity,
+        stock_id = Stock.stock_id,
+        group_id = "13",
+        status= "open"
+    )
+
+    db.add(auction)
+    db.commit()
+    db.refresh(auction)
+    return auction
