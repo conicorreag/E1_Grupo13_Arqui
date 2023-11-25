@@ -310,7 +310,7 @@ async def receive_proposal(request: Request, db: Session = Depends(database.get_
     send_message_to_auction_channel(proposal_to_be_sent, "proposal")
     return {"status": "ok"}
 
-@router.post("/auction/answer/") # receive proposal answer
+@router.post("/auctions/answer/") # receive proposal answer
 async def answer_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     proposal_id = data["proposal_id"]

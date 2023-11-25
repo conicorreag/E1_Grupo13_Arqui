@@ -12,7 +12,7 @@ HOST = os.getenv("HOST")
 PORT = 9000
 USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
-TOPIC = [("stocks/info", 0), ("stocks/validation", 0),("stocks/requests", 0)]
+TOPIC = [("stocks/info", 0), ("stocks/validation", 0),("stocks/requests", 0), ("stocks/auctions", 0)]
 
 
 GROUP_ID = 13
@@ -20,6 +20,9 @@ POST_URL = "http://fastapi_app:8000/create_stocks/"
 GENERAL_PATCH_URL = "http://fastapi_app:8000/transactions/general/"
 GENERAL_POST_URL = "http://fastapi_app:8000/transactions/general/"
 
+PROPOSAL_RECEPTION_URL = "http://fastapi_app:8000/proposals/receive/"
+AUCTION_RECEPTION_URL = "http://fastapi_app:8000/auctions/receive/"
+ANSWER_RECEPTION_URL = "http://fastapi_app:8000/auctions/answer/"
 
 # Espera hasta que la API de FastAPI esté disponible
 def wait_for_fastapi(api_url):
@@ -76,10 +79,12 @@ def on_message(client, userdata, msg):
 
     elif msg_topic == "stocks/auctions":
         print("me esta llegando ",data)
-        if data["group_id"] != GROUP_ID and data["proposal_id"]!= "":
-            response = requests.post("", data=json.dumps(data), headers={'Content-type': 'application/json'})
-        else:
-            response = requests.patch("", data=json.dumps(data), headers={'Content-type': 'application/json'})
+        if data["group_id"] != GROUP_ID and data["type"] == "proposal":
+            response = requests.post(PROPOSAL_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        elif data["group_id"] != GROUP_ID and data["type"] == "offer":
+            response = requests.post(AUCTION_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        elif data["group_id"] == GROUP_ID and (data["type"] == "acceptance" or data["type"] == "rejection"):
+            response = requests.post(PROPOSAL_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
 
 
 def validate_request_patch(validation):
