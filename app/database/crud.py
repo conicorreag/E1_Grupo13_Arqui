@@ -209,52 +209,14 @@ def get_user_predictions(db: Session, user_sub: str):
 def get_prediction(db: Session, prediction_id: int):
     return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
 ### Manejo de auctions
-def create_proposal(db:Session,type:str, auction_id:str):
-    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id)
-    proposal = models.Proposal(
-        proposal_id = uuid6.uuid7(),
-        auction_id = Auction.auction_id,
-        quantity = Auction.quantity,
-        stock_id = Auction.stock_id,
-        group_id = Auction.group_id,
-        type= "proposal"
-    )
-    db.add(proposal)
-    db.commit()
-    db.refresh(proposal)
-    return proposal
-
-def answer_proposal(db:Session, proposal_id:str, answer:str):
-    Proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id)
-    proposal = models.Proposal(
-        proposal_id = Proposal.proposal_id,
-        auction_id = Proposal.auction_id,
-        quantity = Proposal.quantity,
-        stock_id = Proposal.stock_id,
-        group_id = Proposal.group_id,
-        type= answer
-    )
-
-    db.add(proposal)
-    db.commit()
-    db.refresh(Proposal)
-    if answer == "acceptance":
-        Auction = db.query(models.Auction).filter(models.Auction.auction_id == proposal.auction_id)
-        Auction.status = "closed"
-        db.commit()
-        db.refresh(Auction)
-        Auctions  = db.query(models.Proposal).filter(models.Proposal.auction_id == proposal.auction_id)
-        return Auctions
-    return Proposal
-
-def create_auction(db: Session, symbol: int, quantity: int):
-    Stock =db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol)
+def create_auction(db: Session, symbol: str, quantity: int):
+    selected_stock =db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol)
     auction = models.Auction(
         auction_id = uuid6.uuid7(),
-        proposal_id="",
+        proposal_id = "",
         quantity = quantity,
-        stock_id = Stock.stock_id,
-        group_id = "13",
+        stock_id = symbol,
+        group_id = 13,
         status= "open"
     )
 
@@ -262,3 +224,84 @@ def create_auction(db: Session, symbol: int, quantity: int):
     db.commit()
     db.refresh(auction)
     return auction
+
+def save_proposal(db:Session, auction_id:str, proposal_id:str, symbol:str, quantity:int, group_id:int):
+    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id)
+    if not Auction or Auction.status == "closed":
+        return
+    proposal = models.Proposal(
+        proposal_id = proposal_id,
+        auction_id = auction_id,
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = group_id,
+    )
+    db.add(proposal)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+def get_received_proposal(db:Session, proposal_id:str):
+    proposal_to_be_answered = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id)
+    return proposal_to_be_answered
+
+def complete_proposal_transaction(db:Session, proposal_id:str):
+    auction_id = stock_exchange(db, proposal_id)
+    rejected_proposals = db.query(models.Proposal).filter(models.Proposal.auction_id == auction_id)
+    return rejected_proposals
+
+def stock_exchange(db:Session, proposal_id:str):
+    accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id)
+    accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id)
+    
+    received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id)
+    received_stock.quantity += accepted_proposal.quantity
+    db.commit()
+    db.refresh(received_stock)
+    
+    given_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_auction.stock_id)
+    given_stock.quantity -= accepted_auction.quantity
+    db.commit()
+    db.refresh(given_stock)
+    
+    accepted_auction.status = "closed"
+    accepted_proposal.delete()
+    db.commit()
+    return accepted_auction.auction_id
+
+def delete_proposal(db: Session, proposal_to_be_deleted):
+    proposal_to_be_deleted.delete()
+    db.commit()
+    
+def save_auction(db: Session, auction_id : str, symbol : str, quantity : int, group_id : int):
+    auction = models.Auction(
+        auction_id = auction_id,
+        proposal_id = "",
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = group_id,
+        status= "open"
+    )
+    db.add(auction)
+    db.commit()
+    db.refresh(auction)
+    return auction
+
+def create_proposal(db:Session, auction_id:str, symbol:str, quantity:int):
+    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id)
+    if not Auction or Auction.status == "closed":
+        return
+    proposal = models.Proposal(
+        proposal_id = uuid6.uuid7(),
+        auction_id = auction_id,
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = 13,
+    )
+    db.add(proposal)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+def complete_auction_transaction(db:Session, proposal_id:str):
+    stock_exchange(db, proposal_id)

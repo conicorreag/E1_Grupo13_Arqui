@@ -91,6 +91,4 @@ class Proposal(Base):
     quantity = Column(Integer)
     stock_id = Column(String)
     group_id = Column(String)
-    type= Column(String)
-
 
