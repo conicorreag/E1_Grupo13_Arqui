@@ -374,3 +374,7 @@ def get_auctions_available(db:Session):
 def get_proposals_available(db:Session,auction_id:str):
     proposals = db.query(models.Proposal).filter(models.Proposal.type == "proposal").filter(models.Proposal.auction_id ==auction_id ).all()
     return proposals
+
+def get_auctions_admin(db:Session):
+    auctions = db.query(models.Auction).filter(models.Auction.group_id == 13).all()
+    return auctions

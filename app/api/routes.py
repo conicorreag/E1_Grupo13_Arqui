@@ -350,8 +350,13 @@ async def get_stocks_available(db: Session = Depends(database.get_db)):
 async def get_auctions_available(db: Session = Depends(database.get_db)):
     return crud.get_auctions_available(db)
 
+@router.get("/auctions/admin/")
+async def get_auctions_admin(db: Session = Depends(database.get_db)):
+    return crud.get_auctions_admin(db)
+
 @router.post("/proposals_available/")
 async def get_proposals_available(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     auction_id = data["auction_id"]
     return crud.get_proposals_available(db,auction_id)
+
