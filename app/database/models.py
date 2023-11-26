@@ -25,7 +25,7 @@ class Transaction(Base):
     user_sub = Column(String, index=True)
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)
-    quantity = Column(Integer)
+    quantity = Column(Float)
     status = Column(String)  # Puede ser approved, rejected o waiting
     total_price = Column(Float)
     location = Column(String)
@@ -49,7 +49,7 @@ class Prediction(Base):
     initial_date = Column(String, index=True)
     final_date = Column(String, index=True)
     future_dates = Column(ARRAY(String))
-    quantity = Column(Integer)
+    quantity = Column(Float)
     final_price = Column(Float)
     future_prices = Column(ARRAY(Float))
     status = Column(String)  # Puede ser waiting o ready
@@ -63,7 +63,7 @@ class GeneralTransactions(Base):
     user_sub = Column(String, index=True)
     datetime = Column(String, index=True)
     symbol = Column(String, index=True)
-    quantity = Column(Integer)
+    quantity = Column(Float)
     status = Column(String)  # Puede ser approved, rejected o waiting
     total_price = Column(Float)
 
@@ -71,16 +71,17 @@ class StocksAvailable(Base):
     __tablename__ = "stocks_available"
     id = Column(Integer, primary_key=True, index=True)
     stock_id = Column(String, index=True)
-    symbol = Column(String, index=True)
-    quantity = Column(Integer)
+    symbol = Column(String, index=True,unique=True)
+    quantity = Column(Float)
 
 class Auction(Base):
     __tablename__ = "auctions"
     id = Column(Integer, primary_key=True, index=True)
-    auction_id = Column(String)
-    quantity = Column(Integer)
+    auction_id = Column(String, unique=True)
+    quantity = Column(Float)
     stock_id = Column(String)
     group_id = Column(String)
+    type = Column(String)
     status = Column(String)
 
 class Proposal(Base):
@@ -88,7 +89,8 @@ class Proposal(Base):
     id = Column(Integer, primary_key=True, index=True)
     proposal_id = Column(String)
     auction_id = Column(String)
-    quantity = Column(Integer)
+    quantity = Column(Float)
     stock_id = Column(String)
     group_id = Column(String)
+    type = Column(String)
 

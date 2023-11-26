@@ -239,9 +239,12 @@ async def heartbeat_job():
 ### manejo auctions
 
 def send_message_to_auction_channel(auction, message : str):
+    proposal_id = ""
+    if message != "offer":
+        proposal_id = auction.proposal_id
     broker_message = {
         "auction_id": auction.auction_id,
-        "proposal_id": auction.proposal_id,
+        "proposal_id": proposal_id,
         "stock_id": auction.stock_id,
         "quantity": auction.quantity,
         "group_id": auction.group_id,
@@ -254,10 +257,14 @@ def send_message_to_auction_channel(auction, message : str):
 @router.post("/auctions/send/") # send auction
 async def create_auction(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    auction = crud.create_auction(db, data["stock_id"], data["quantity"])
-    send_message_to_auction_channel(auction, "offer")
-    return {"status": "ok"}
+    if(crud.stock_check(db, data["symbol"], data["quantity"])):
+        auction = crud.create_auction(db, data["symbol"], data["quantity"])
+        send_message_to_auction_channel(auction, "offer")
+        return {"status": "ok","auction_id":auction.auction_id}
+    else:
+        return {"status": "stocks insuficientes"}
 
+#################################################
 @router.post("/proposals/receive/") # receive proposal
 async def receive_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
@@ -266,27 +273,31 @@ async def receive_proposal(request: Request, db: Session = Depends(database.get_
     symbol = data["stock_id"]
     quantity = data["quantity"]
     group_id = data["group_id"]
-    auction = crud.save_proposal(db, auction_id, proposal_id, symbol, quantity, group_id)
-    return {"status": "ok"}
+    type = data["type"]
+    proposal = crud.save_proposal(db, auction_id, proposal_id, symbol, quantity, group_id,type)
+    return {"status": "ok","proposal_id":proposal_id}
 
+################################################
 @router.post("/proposals/answer/") # send proposal answer
 async def answer_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     proposal_id = data["proposal_id"]
-    proposal_answer = data["answer"]
+    proposal_answer = data["type"]
     proposal_to_be_answered = crud.get_received_proposal(db, proposal_id)
-    send_message_to_auction_channel(proposal_to_be_answered, proposal_answer)
-    
-    if proposal_answer == "acceptance":
+    if proposal_answer == "acceptance" and crud.stock_check(db, proposal_to_be_answered.stock_id, proposal_to_be_answered.quantity):
+        send_message_to_auction_channel(proposal_to_be_answered, proposal_answer)
         rejected_proposals = crud.complete_proposal_transaction(db, proposal_id)
-        for rejected_proposal in rejected_proposals:
-            send_message_to_auction_channel(rejected_proposal, "rejection")
-            crud.delete_proposal(rejected_proposal)
+        if(rejected_proposals and len(rejected_proposals) > 0):
+            print("rechazado", rejected_proposal)
+            for rejected_proposal in rejected_proposals:
+                send_message_to_auction_channel(rejected_proposal, "rejection")
+                crud.delete_proposal(rejected_proposal)
         
     elif proposal_answer == "rejection":
         crud.delete_proposal(db, proposal_to_be_answered)
 
-    return {"status": "ok"}
+    return {"status": "ok",proposal_answer: proposal_to_be_answered.proposal_id}
+
 
 
 ## Segundo Flujo (GRUPO 13 RECIBE AUCTION)
@@ -298,28 +309,49 @@ async def save_auction(request: Request, db: Session = Depends(database.get_db))
     quantity = data["quantity"]
     group_id = data["group_id"]
     auction = crud.save_auction(db, auction_id, symbol, quantity, group_id)
-    return {"status": "ok"}
+    return {"status": "ok","auction_id":auction.auction_id}
 
+########################################
 @router.post("/proposals/send/") # send proposal
 async def receive_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     auction_id = data["auction_id"]
     symbol = data["stock_id"]
     quantity = data["quantity"]
-    proposal_to_be_sent = crud.create_proposal(db, auction_id, symbol, quantity)
-    send_message_to_auction_channel(proposal_to_be_sent, "proposal")
-    return {"status": "ok"}
+    if (crud.stock_check(db, symbol,quantity)):
+        proposal_to_be_sent = crud.create_proposal(db, auction_id, symbol, quantity)
+        send_message_to_auction_channel(proposal_to_be_sent, "proposal")
+        return {"status": "ok","proposal_id":proposal_to_be_sent.proposal_id}
+    else:
+        return {"status": "stocks insuficientes"}
 
+################################################
 @router.post("/auctions/answer/") # receive proposal answer
 async def answer_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     proposal_id = data["proposal_id"]
     proposal_answer = data["type"]    
     if proposal_answer == "acceptance":
-        crud.complete_auction_transaction(db, proposal_id)
+        crud.stock_exchange_buy(db, proposal_id)
         
     elif proposal_answer == "rejection":
         rejected_proposal = crud.get_received_proposal(db, proposal_id)
         crud.delete_proposal(db, rejected_proposal)
 
     return {"status": "ok"}
+
+@router.get("/stocks_available/")
+async def get_stocks_available(db: Session = Depends(database.get_db)):
+    return crud.get_stocks_available(db)
+
+
+
+@router.get("/auctions_available/")
+async def get_auctions_available(db: Session = Depends(database.get_db)):
+    return crud.get_auctions_available(db)
+
+@router.post("/proposals_available/")
+async def get_proposals_available(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    auction_id = data["auction_id"]
+    return crud.get_proposals_available(db,auction_id)
