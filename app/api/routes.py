@@ -358,7 +358,6 @@ async def get_stocks_available(db: Session = Depends(database.get_db)):
     return crud.get_stocks_available(db)
 
 
-
 @router.get("/auctions_available/")
 async def get_auctions_available(db: Session = Depends(database.get_db)):
     return crud.get_auctions_available(db)

@@ -129,9 +129,15 @@ def validate_user_transaction(db: Session, token: str, status: str):
     set_transaction_validation(db, transaction, status)
     if transaction.admin == True:
         stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == transaction.symbol).first()
-        stock.quantity += transaction.quantity
-        db.commit()
-        db.refresh(stock)
+        if stock:
+            stock.quantity += transaction.quantity
+            db.commit()
+            db.refresh(stock)
+        else:
+            stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=transaction.symbol, quantity=transaction.quantity)
+            db.add(stock)
+            db.commit()
+            db.refresh(stock)
     return transaction
 
 
