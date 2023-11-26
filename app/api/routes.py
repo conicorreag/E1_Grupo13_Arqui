@@ -108,12 +108,25 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
     data = await request.json()
     ip = request.client.host
     location = get_location(ip)
-    transaction = crud.create_user_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location)
+    transaction = crud.create_user_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location,admin=False)
     response =  await webpay_plus_create(transaction.id, transaction.total_price)
     crud.add_token_to_transaction(db, transaction, response["token"])
     if (transaction.status != "rejected"):
         send_request(transaction,response["token"])
     return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"], "status":transaction.status})
+
+@router.post("/transactions/admin")
+async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
+    data = await request.json()
+    ip = request.client.host
+    location = get_location(ip)
+    transaction = crud.create_user_transaction(db, user_sub=data["user_sub"], datetime=data["datetime"], symbol=data["symbol"], quantity=data["quantity"], location=location,admin=True)
+    response =  await webpay_plus_create(transaction.id, transaction.total_price)
+    crud.add_token_to_transaction(db, transaction, response["token"])
+    if (transaction.status != "rejected"):
+        send_request(transaction,response["token"])
+    return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"], "status":transaction.status})
+
 
 
 def send_request(transaction,token):
@@ -251,7 +264,7 @@ def send_message_to_auction_channel(auction, message : str):
         "type": message
         }
     client.connect(HOST, PORT)
-    client.publish("stocks/auction", json.dumps(broker_message))
+    client.publish("stocks/auctions", json.dumps(broker_message))
 
 ## Primer Flujo (GRUPO 13 ENVIA AUCTION)
 @router.post("/auctions/send/") # send auction
@@ -281,8 +294,8 @@ async def receive_proposal(request: Request, db: Session = Depends(database.get_
 @router.post("/proposals/answer/") # send proposal answer
 async def answer_proposal(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    proposal_id = data["proposal_id"]
-    proposal_answer = data["type"]
+    proposal_id = data["proposal_id"] # Solo aceptar, si llega aca no se rechaza
+    proposal_answer = "acceptance"
     proposal_to_be_answered = crud.get_received_proposal(db, proposal_id)
     if proposal_answer == "acceptance" and crud.stock_check(db, proposal_to_be_answered.stock_id, proposal_to_be_answered.quantity):
         send_message_to_auction_channel(proposal_to_be_answered, proposal_answer)
@@ -292,11 +305,11 @@ async def answer_proposal(request: Request, db: Session = Depends(database.get_d
             for rejected_proposal in rejected_proposals:
                 send_message_to_auction_channel(rejected_proposal, "rejection")
                 crud.delete_proposal(rejected_proposal)
-        
-    elif proposal_answer == "rejection":
-        crud.delete_proposal(db, proposal_to_be_answered)
+        return {"status": "ok",proposal_answer: proposal_to_be_answered.proposal_id}
 
-    return {"status": "ok",proposal_answer: proposal_to_be_answered.proposal_id}
+    else:
+        return {"status": "stocks insuficientes"}
+
 
 
 

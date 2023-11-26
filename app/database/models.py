@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ARRAY
+from sqlalchemy import Column, Integer, String, Float, ARRAY,Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -30,6 +30,7 @@ class Transaction(Base):
     total_price = Column(Float)
     location = Column(String)
     token = Column(String)
+    admin = Column(Boolean)
 
 
 class Wallet(Base):

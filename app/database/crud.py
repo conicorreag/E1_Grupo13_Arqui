@@ -46,7 +46,7 @@ def get_recent_stocks(db: Session):
     )
     return stocks_data
 
-def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
+def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location,admin:bool):
     selected_stock = get_selected_stock(db, symbol)
     total_price = get_transaction_total_price(quantity, selected_stock)
     
@@ -65,10 +65,14 @@ def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: s
             location=location,
             request_id=uuid6.uuid7(),
             total_price=total_price,
-            token=""
+            token="",
+            admin=admin
+
         )
     add_transaction_to_database(db, transaction)
     return transaction
+
+
 
 def add_token_to_transaction(db: Session, transaction: object, token):
     transaction.token = token
@@ -123,6 +127,11 @@ def validate_general_transaction(db: Session, request_id: int, validation: bool)
 def validate_user_transaction(db: Session, token: str, status: str):
     transaction = db.query(models.Transaction).filter(models.Transaction.token == token).first()
     set_transaction_validation(db, transaction, status)
+    if transaction.admin == True:
+        stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == transaction.symbol).first()
+        stock.quantity += transaction.quantity
+        db.commit()
+        db.refresh(stock)
     return transaction
 
 
