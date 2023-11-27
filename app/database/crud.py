@@ -138,6 +138,17 @@ def validate_user_transaction(db: Session, token: str, status: str):
             db.add(stock)
             db.commit()
             db.refresh(stock)
+    else:
+        if stock:
+            stock.quantity -= transaction.quantity
+            db.commit()
+            db.refresh(stock)
+        else:
+            stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=transaction.symbol, quantity=transaction.quantity)
+            db.add(stock)
+            db.commit()
+            db.refresh(stock)
+
     return transaction
 
 
