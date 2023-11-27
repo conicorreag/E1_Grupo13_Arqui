@@ -85,7 +85,7 @@ def on_message(client, userdata, msg):
         elif data["group_id"] != GROUP_ID and data["type"] == "offer" :
             response = requests.post(AUCTION_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
         elif data["group_id"] == GROUP_ID and (data["type"] == "acceptance" or data["type"] == "rejection") :
-            response = requests.post(PROPOSAL_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+            response = requests.post(ANSWER_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
 
 
 def validate_request_patch(validation):

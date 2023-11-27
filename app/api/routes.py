@@ -300,8 +300,7 @@ async def answer_proposal(request: Request, db: Session = Depends(database.get_d
     if proposal_answer == "acceptance" :
         send_message_to_auction_channel(proposal_to_be_answered, proposal_answer)
         rejected_proposals = crud.complete_proposal_transaction(db, proposal_id)
-        if(rejected_proposals and len(rejected_proposals) > 0):
-            print("rechazado", rejected_proposal)
+        if(rejected_proposals):
             for rejected_proposal in rejected_proposals:
                 send_message_to_auction_channel(rejected_proposal, "rejection")
                 crud.delete_proposal(rejected_proposal)
@@ -339,7 +338,7 @@ async def receive_proposal(request: Request, db: Session = Depends(database.get_
 
 ################################################
 @router.post("/auctions/answer/") # receive proposal answer
-async def answer_proposal(request: Request, db: Session = Depends(database.get_db)):
+async def answer_auctions(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     proposal_id = data["proposal_id"]
     proposal_answer = data["type"]    

@@ -274,7 +274,7 @@ def get_received_proposal(db:Session, proposal_id:str):
 
 def complete_proposal_transaction(db:Session, proposal_id:str):
     auction_id = stock_exchange_sell(db, proposal_id)
-    rejected_proposals = db.query(models.Proposal).filter(models.Proposal.auction_id == auction_id)
+    rejected_proposals = db.query(models.Proposal).filter(models.Proposal.auction_id == auction_id).all()
     if(rejected_proposals):
         return rejected_proposals
     else:
@@ -283,6 +283,7 @@ def complete_proposal_transaction(db:Session, proposal_id:str):
 def stock_exchange_sell(db:Session, proposal_id:str):
     accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
     accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id).first()
+    print(accepted_proposal)
     
     received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id).first()
     received_stock.quantity += accepted_proposal.quantity
@@ -358,7 +359,7 @@ def create_proposal(db:Session, auction_id:str, symbol:str, quantity:int):
 
 
 
-def complete_proposal_transaction(db:Session, proposal_id:str):
+def complete_proposal_transaction2(db:Session, proposal_id:str):
     auction_id = stock_exchange_buy(db, proposal_id)
     return auction_id
 
