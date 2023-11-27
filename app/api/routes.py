@@ -331,12 +331,11 @@ async def receive_proposal(request: Request, db: Session = Depends(database.get_
     auction_id = data["auction_id"]
     symbol = data["stock_id"]
     quantity = data["quantity"]
-    if (crud.stock_check(db, symbol,quantity)):
-        proposal_to_be_sent = crud.create_proposal(db, auction_id, symbol, quantity)
-        send_message_to_auction_channel(proposal_to_be_sent, "proposal")
-        return {"status": "ok","proposal_id":proposal_to_be_sent.proposal_id}
-    else:
-        return {"status": "stocks insuficientes"}
+    
+    proposal_to_be_sent = crud.create_proposal(db, auction_id, symbol, quantity)
+    send_message_to_auction_channel(proposal_to_be_sent, "proposal")
+    return {"status": "ok","proposal_id":proposal_to_be_sent.proposal_id}
+   
 
 ################################################
 @router.post("/auctions/answer/") # receive proposal answer
