@@ -115,7 +115,7 @@ async def purchase_request(request: Request, db: Session = Depends(database.get_
         send_request(transaction,response["token"])
     return json.dumps({"url":response["url"],"request_id":transaction.request_id,"token":response["token"], "status":transaction.status})
 
-@router.post("/transactions/admin")
+@router.post("/transactions/admin/")
 async def purchase_request(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
     ip = request.client.host
