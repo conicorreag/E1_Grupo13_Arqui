@@ -95,7 +95,7 @@ services:
       dockerfile: Dockerfile.mqtt
     image: custom_mqtt_container:3.0.0
     ports:
-      - "9001:9001"
+      - "9002:9001"
     networks:
       - mqtt-network
     restart: always

@@ -12,7 +12,7 @@ HOST = os.getenv("HOST")
 PORT = 9000
 USER = os.getenv("USER")
 PASSWORD = os.getenv("PASSWORD")
-TOPIC = [("stocks/info", 0), ("stocks/validation", 0),("stocks/requests", 0)]
+TOPIC = [("stocks/info", 0), ("stocks/validation", 0),("stocks/requests", 0), ("stocks/auctions", 0)]
 
 
 GROUP_ID = 13
@@ -20,7 +20,10 @@ POST_URL = "http://fastapi_app:8000/create_stocks/"
 GENERAL_PATCH_URL = "http://fastapi_app:8000/transactions/general/"
 GENERAL_POST_URL = "http://fastapi_app:8000/transactions/general/"
 
-
+PROPOSAL_RECEPTION_URL = "http://fastapi_app:8000/proposals/receive/"
+AUCTION_RECEPTION_URL = "http://fastapi_app:8000/auctions/receive/"
+ANSWER_RECEPTION_URL = "http://fastapi_app:8000/auctions/answer/"
+SPAM = [334,333,15,22,31]
 # Espera hasta que la API de FastAPI esté disponible
 def wait_for_fastapi(api_url):
     max_retries = 30  # Número máximo de intentos de conexión
@@ -56,9 +59,9 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     msg_topic = msg.topic
-    print(f"Mensaje recibido en el canal {msg.topic}")
+    #print(f"Mensaje recibido en el canal {msg.topic}")
     data = json.loads(msg.payload.decode())
-    print(data)
+    #print(data)
 
     if msg_topic == "stocks/info":
         response = requests.post(POST_URL, json=msg.payload.decode())
@@ -72,7 +75,18 @@ def on_message(client, userdata, msg):
         print("me esta llegando ",data)
         if not validate_request(data): return
         if data["group_id"] != GROUP_ID:
-            response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})        
+            response = requests.post(GENERAL_POST_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})   
+
+    elif msg_topic == "stocks/auctions" and data["group_id"] not in SPAM:
+        print("me esta llegando ",data)
+
+        if data["group_id"] != GROUP_ID and data["type"] == "proposal" :
+            response = requests.post(PROPOSAL_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        elif data["group_id"] != GROUP_ID and data["type"] == "offer" :
+            response = requests.post(AUCTION_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        elif data["group_id"] == GROUP_ID and (data["type"] == "acceptance" or data["type"] == "rejection") :
+            response = requests.post(ANSWER_RECEPTION_URL, data=json.dumps(data), headers={'Content-type': 'application/json'})
+
 
 def validate_request_patch(validation):
     required_keys = ["request_id", "group_id", "valid"]

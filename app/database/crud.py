@@ -22,6 +22,12 @@ def create_stock(db: Session, stocks_id: int, datetime: str, symbol: str, shortN
     db.refresh(stock)
     return stock
 
+def add_to_available(db:Session, symbol:str, quantity:int):
+    stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol).first()
+    if not stock:
+        stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=symbol, quantity=quantity)
+        db.add(stock)
+
 
 def get_stock(db: Session, symbol: str):
     return db.query(models.Stock).filter(models.Stock.symbol == symbol).first()
@@ -40,7 +46,7 @@ def get_recent_stocks(db: Session):
     )
     return stocks_data
 
-def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location):
+def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: str, quantity: int, location,admin:bool):
     selected_stock = get_selected_stock(db, symbol)
     total_price = get_transaction_total_price(quantity, selected_stock)
     
@@ -59,10 +65,14 @@ def create_user_transaction(db: Session, user_sub: str, datetime: str, symbol: s
             location=location,
             request_id=uuid6.uuid7(),
             total_price=total_price,
-            token=""
+            token="",
+            admin=admin
+
         )
     add_transaction_to_database(db, transaction)
     return transaction
+
+
 
 def add_token_to_transaction(db: Session, transaction: object, token):
     transaction.token = token
@@ -117,6 +127,28 @@ def validate_general_transaction(db: Session, request_id: int, validation: bool)
 def validate_user_transaction(db: Session, token: str, status: str):
     transaction = db.query(models.Transaction).filter(models.Transaction.token == token).first()
     set_transaction_validation(db, transaction, status)
+    if transaction.admin == True:
+        stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == transaction.symbol).first()
+        if stock:
+            stock.quantity += transaction.quantity
+            db.commit()
+            db.refresh(stock)
+        else:
+            stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=transaction.symbol, quantity=transaction.quantity)
+            db.add(stock)
+            db.commit()
+            db.refresh(stock)
+    else:
+        if stock:
+            stock.quantity -= transaction.quantity
+            db.commit()
+            db.refresh(stock)
+        else:
+            stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=transaction.symbol, quantity=transaction.quantity)
+            db.add(stock)
+            db.commit()
+            db.refresh(stock)
+
     return transaction
 
 
@@ -208,3 +240,168 @@ def get_user_predictions(db: Session, user_sub: str):
 
 def get_prediction(db: Session, prediction_id: int):
     return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
+### Manejo de auctions
+
+
+#################### FLUJO 1 ##########################
+def create_auction(db: Session, symbol: str, quantity: int):
+    selected_stock =db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol)
+    auction = models.Auction(
+        auction_id = uuid6.uuid7(),
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = 13,
+        type="offer",
+        status= "open"
+    )
+
+    db.add(auction)
+    db.commit()
+    db.refresh(auction)
+    return auction
+
+def save_proposal(db:Session, auction_id:str, proposal_id:str, symbol:str, quantity:int, group_id:int,type:str):
+    print(auction_id)
+    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id).first()
+    print(Auction)
+    if not Auction or Auction.status == "closed":
+        return
+    proposal = models.Proposal(
+        proposal_id = proposal_id,
+        auction_id = auction_id,
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = group_id,
+        type = type
+    )
+    db.add(proposal)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+def get_received_proposal(db:Session, proposal_id:str):
+    proposal_to_be_answered = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
+    return proposal_to_be_answered
+
+def complete_proposal_transaction(db:Session, proposal_id:str):
+    auction_id = stock_exchange_sell(db, proposal_id)
+    rejected_proposals = db.query(models.Proposal).filter(models.Proposal.auction_id == auction_id).all()
+    if(rejected_proposals):
+        return rejected_proposals
+    else:
+        return False
+
+def stock_exchange_sell(db:Session, proposal_id:str):
+    accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
+    accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id).first()
+    print(accepted_proposal)
+    
+    received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id).first()
+    received_stock.quantity += accepted_proposal.quantity
+    db.commit()
+    db.refresh(received_stock)
+    
+    given_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_auction.stock_id).first()
+    given_stock.quantity -= accepted_auction.quantity
+    db.commit()
+    db.refresh(given_stock)
+    
+    accepted_auction.status = "closed"
+    db.delete(accepted_proposal)
+    db.commit()
+    return accepted_auction.auction_id
+
+############################ FLUJO 2 #############################
+
+def stock_exchange_buy(db:Session, proposal_id:str):
+    accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
+    accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id).first()
+    
+    received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id).first()
+    received_stock.quantity -= accepted_proposal.quantity
+    db.commit()
+    db.refresh(received_stock)
+    
+    given_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_auction.stock_id).first()
+
+    given_stock.quantity += accepted_auction.quantity
+    db.commit()
+    db.refresh(given_stock)
+    
+    accepted_auction.status = "closed"
+    db.delete(accepted_proposal)
+    db.commit()
+    return accepted_auction.auction_id
+
+def delete_proposal(db: Session, proposal_to_be_deleted):
+    db.delete(proposal_to_be_deleted)
+    db.commit()
+    
+def save_auction(db: Session, auction_id : str, symbol : str, quantity : int, group_id : int):
+    auction = models.Auction(
+        auction_id = auction_id,
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = group_id,
+        type="offer",
+        status= "open"
+    )
+    db.add(auction)
+    db.commit()
+    db.refresh(auction)
+    return auction
+
+def create_proposal(db:Session, auction_id:str, symbol:str, quantity:int):
+    Auction = db.query(models.Auction).filter(models.Auction.auction_id == auction_id).first()
+    if not Auction or Auction.status == "closed":
+        return
+    proposal = models.Proposal(
+        proposal_id = uuid6.uuid7(),
+        auction_id = auction_id,
+        quantity = quantity,
+        stock_id = symbol,
+        group_id = 13,
+        type ="proposal"
+    )
+    db.add(proposal)
+    db.commit()
+    db.refresh(proposal)
+    return proposal
+
+
+
+def complete_proposal_transaction2(db:Session, proposal_id:str):
+    auction_id = stock_exchange_buy(db, proposal_id)
+    return auction_id
+
+# def stock_check(db:Session, symbol:str, quantity:int):
+#     stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol).first()
+#     if not stock:
+#         return False
+#     else:
+#         if stock.quantity < quantity:
+#             return False
+#         else:
+#             return True
+
+def get_stocks_available(db:Session):
+    stocks = db.query(models.StocksAvailable).filter(models.StocksAvailable.quantity > 0).all()
+    stock_json = {}
+    for stock in stocks:
+
+        stock_info = get_selected_stock(db, stock.symbol)
+        stock_json[stock.symbol] = {"quantity":stock.quantity,"price":stock_info.price,"source":"ADMIN","shortName":stock_info.shortName, "symbol": stock.symbol, "datetime":stock_info.datetime,"currency":stock_info.currency}
+        
+    return stock_json
+
+def get_auctions_available(db:Session):
+    auctions = db.query(models.Auction).filter(models.Auction.status == "open").all()
+    return auctions
+
+def get_proposals_available(db:Session,auction_id:str):
+    proposals = db.query(models.Proposal).filter(models.Proposal.type == "proposal").filter(models.Proposal.auction_id ==auction_id ).all()
+    return proposals
+
+def get_auctions_admin(db:Session):
+    auctions = db.query(models.Auction).filter(models.Auction.group_id == '13').all()
+    return auctions
