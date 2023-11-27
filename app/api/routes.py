@@ -270,12 +270,12 @@ def send_message_to_auction_channel(auction, message : str):
 @router.post("/auctions/send/") # send auction
 async def create_auction(request: Request, db: Session = Depends(database.get_db)):
     data = await request.json()
-    if(crud.stock_check(db, data["symbol"], data["quantity"])):
-        auction = crud.create_auction(db, data["symbol"], data["quantity"])
-        send_message_to_auction_channel(auction, "offer")
-        return {"status": "ok","auction_id":auction.auction_id}
-    else:
-        return {"status": "stocks insuficientes"}
+    # if(crud.stock_check(db, data["symbol"], data["quantity"])):
+    auction = crud.create_auction(db, data["symbol"], data["quantity"])
+    send_message_to_auction_channel(auction, "offer")
+    return {"status": "ok","auction_id":auction.auction_id}
+    # else:
+    #     return {"status": "stocks insuficientes"}
 
 #################################################
 @router.post("/proposals/receive/") # receive proposal

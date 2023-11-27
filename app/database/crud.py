@@ -362,15 +362,15 @@ def complete_proposal_transaction(db:Session, proposal_id:str):
     auction_id = stock_exchange_buy(db, proposal_id)
     return auction_id
 
-def stock_check(db:Session, symbol:str, quantity:int):
-    stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol).first()
-    if not stock:
-        return False
-    else:
-        if stock.quantity < quantity:
-            return False
-        else:
-            return True
+# def stock_check(db:Session, symbol:str, quantity:int):
+#     stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol).first()
+#     if not stock:
+#         return False
+#     else:
+#         if stock.quantity < quantity:
+#             return False
+#         else:
+#             return True
 
 def get_stocks_available(db:Session):
     stocks = db.query(models.StocksAvailable).filter(models.StocksAvailable.quantity > 0).all()
@@ -378,7 +378,7 @@ def get_stocks_available(db:Session):
     for stock in stocks:
 
         stock_info = get_selected_stock(db, stock.symbol)
-        stock_json[stock.symbol] = {"quantity":stock.quantity,"price":stock_info.price,"source":"ADMIN","shortName":stock_info.shortName,"datetime":stock_info.datetime,"currency":stock_info.currency}
+        stock_json[stock.symbol] = {"quantity":stock.quantity,"price":stock_info.price,"source":"ADMIN","shortName":stock_info.shortName, "symbol": stock.symbol, "datetime":stock_info.datetime,"currency":stock_info.currency}
         
     return stock_json
 
@@ -391,5 +391,5 @@ def get_proposals_available(db:Session,auction_id:str):
     return proposals
 
 def get_auctions_admin(db:Session):
-    auctions = db.query(models.Auction).filter(models.Auction.group_id == 13).all()
+    auctions = db.query(models.Auction).filter(models.Auction.group_id == '13').all()
     return auctions
