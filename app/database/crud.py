@@ -138,17 +138,6 @@ def validate_user_transaction(db: Session, token: str, status: str):
             db.add(stock)
             db.commit()
             db.refresh(stock)
-    else:
-        if stock:
-            stock.quantity -= transaction.quantity
-            db.commit()
-            db.refresh(stock)
-        else:
-            stock = models.StocksAvailable(stock_id=uuid6.uuid7(),symbol=transaction.symbol, quantity=transaction.quantity)
-            db.add(stock)
-            db.commit()
-            db.refresh(stock)
-
     return transaction
 
 
@@ -242,6 +231,15 @@ def get_prediction(db: Session, prediction_id: int):
     return db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
 ### Manejo de auctions
 
+def update_stock_available_quantity(db: Session, symbol: str, quantity: int):
+    selected_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == symbol).first()
+    if not selected_stock:
+        selected_stock = models.StocksAvailable(stock_id = uuid6.uuid7(), symbol = symbol, quantity = quantity)
+        db.add(selected_stock)
+    else:
+        selected_stock.quantity += quantity
+    db.commit()
+    db.refresh(selected_stock)
 
 #################### FLUJO 1 ##########################
 def create_auction(db: Session, symbol: str, quantity: int):
@@ -295,17 +293,8 @@ def stock_exchange_sell(db:Session, proposal_id:str):
     accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
     accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id).first()
     print(accepted_proposal)
-    
-    received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id).first()
-    received_stock.quantity += accepted_proposal.quantity
-    db.commit()
-    db.refresh(received_stock)
-    
-    given_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_auction.stock_id).first()
-    given_stock.quantity -= accepted_auction.quantity
-    db.commit()
-    db.refresh(given_stock)
-    
+    update_stock_available_quantity(db, accepted_proposal.stock_id, accepted_proposal.quantity)
+    update_stock_available_quantity(db, accepted_auction.stock_id, -accepted_auction.quantity)
     accepted_auction.status = "closed"
     db.delete(accepted_proposal)
     db.commit()
@@ -316,17 +305,9 @@ def stock_exchange_sell(db:Session, proposal_id:str):
 def stock_exchange_buy(db:Session, proposal_id:str):
     accepted_proposal = db.query(models.Proposal).filter(models.Proposal.proposal_id == proposal_id).first()
     accepted_auction = db.query(models.Auction).filter(models.Auction.auction_id == accepted_proposal.auction_id).first()
-    
-    received_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_proposal.stock_id).first()
-    received_stock.quantity -= accepted_proposal.quantity
-    db.commit()
-    db.refresh(received_stock)
-    
-    given_stock = db.query(models.StocksAvailable).filter(models.StocksAvailable.symbol == accepted_auction.stock_id).first()
 
-    given_stock.quantity += accepted_auction.quantity
-    db.commit()
-    db.refresh(given_stock)
+    update_stock_available_quantity(db, accepted_proposal.stock_id, -accepted_proposal.quantity)
+    update_stock_available_quantity(db, accepted_auction.stock_id, accepted_auction.quantity)
     
     accepted_auction.status = "closed"
     db.delete(accepted_proposal)
