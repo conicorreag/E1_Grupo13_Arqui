@@ -14,5 +14,7 @@ COPY ./requirements.txt /opt/requirements.txt
 RUN chmod +x /opt/requirements.txt
 RUN pip install -r requirements.txt
 
+
+
 # copy project
 COPY . /opt/

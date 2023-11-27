@@ -12,4 +12,8 @@ transbank-sdk
 ip2geotools
 uuid6
 httpx==0.24.1
+python-dateutil==2.8.2
+
+
+
 

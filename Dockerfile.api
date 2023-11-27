@@ -9,11 +9,14 @@ COPY app/ /app
 COPY requirements.txt /app
 COPY .env .env
 
+
 # Instala las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expone el puerto que utiliza tu aplicación FastAPI
 EXPOSE 8000
+
+
 
 # Comando para iniciar la aplicación utilizando python3 y el archivo main.py
 CMD ["python", "main.py"]

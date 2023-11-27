@@ -8,8 +8,11 @@ WORKDIR /mqtt
 COPY mqtt/ /mqtt
 COPY .env .env
 
+
 # Instala las dependencias
 RUN pip install paho-mqtt requests configparser python-dotenv python-dateutil
+
+
 
 # Comando para ejecutar el broker MQTT (ajústalo según el broker que estés utilizando)
 CMD ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
