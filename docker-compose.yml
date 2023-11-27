@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
+    image: fastapi_app:3.0.0
     ports:
       - "8000:8000"
     restart: always
@@ -48,6 +49,7 @@ services:
         context: ./workers
         dockerfile: Dockerfile
     command: uvicorn producer:app --reload --host 0.0.0.0 --port 8080
+    image: producer:3.0.0
     restart: always
     volumes:
       - ./workers:/opt/
@@ -65,6 +67,7 @@ services:
     build:
       context: ./workers
       dockerfile: Dockerfile
+    image: consumer:3.0.0
     deploy:
       # replicas scales containers
       replicas: 1
@@ -90,6 +93,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.mqtt
+    image: custom_mqtt_container:3.0.0
     ports:
       - "9001:9001"
     networks:
