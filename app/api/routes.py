@@ -297,7 +297,7 @@ async def answer_proposal(request: Request, db: Session = Depends(database.get_d
     proposal_id = data["proposal_id"] # Solo aceptar, si llega aca no se rechaza
     proposal_answer = "acceptance"
     proposal_to_be_answered = crud.get_received_proposal(db, proposal_id)
-    if proposal_answer == "acceptance" and crud.stock_check(db, proposal_to_be_answered.stock_id, proposal_to_be_answered.quantity):
+    if proposal_answer == "acceptance" :
         send_message_to_auction_channel(proposal_to_be_answered, proposal_answer)
         rejected_proposals = crud.complete_proposal_transaction(db, proposal_id)
         if(rejected_proposals and len(rejected_proposals) > 0):
