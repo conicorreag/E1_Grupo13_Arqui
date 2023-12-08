@@ -37,6 +37,8 @@ A continuación se explica el flujo de la configuración de terraform.
 
 ### RDOC3 Llamadas a la API 
 
+https://www.postman.com/technical-explorer-70847697/workspace/my-workspace
+
 A continuación se detallan las llamadas a la API realizadas desde el frontend:
 
 - **(POST) g13arquitectura.me/create_prediction/ :** Crea una predicción en la base de datos, recibe un json con los datos de la predicción y retorna un json con las fechas y precios futuros calculados.
